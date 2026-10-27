@@ -817,7 +817,7 @@
             <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
               <i class="fa-solid fa-map text-emerald-600"></i> Carte Interactive Multi-Couches & Visualiseur GPX
             </h3>
-            <p class="text-xs text-slate-500">Choisissez la vue Satellite, Plan ou Topo en haut à droite.</p>
+            <p class="text-xs text-slate-500">Choisissez la vue Satellite ou Plan en haut à droite.</p>
           </div>
           <div class="flex items-center gap-2">
             <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 shadow-sm transition">
@@ -847,17 +847,30 @@
       setTimeout(() => {
         try {
           if (leafletMap) { leafletMap.remove(); }
-          leafletMap = L.map('gpx-map', { referrerPolicy: 'no-referrer' }).setView([43.4633, -1.4519], 13);
-          const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
-          const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18, attribution: 'Esri' });
-          const topoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'OpenTopoMap' });
-          
-          esriSatellite.addTo(leafletMap);
-          L.control.layers({ "🛰️ Satellite Esri": esriSatellite, "🗺️ Plan (OSM)": osmStandard, "⛰️ Topo": topoMap }, null, { position: 'topright' }).addTo(leafletMap);
+          leafletMap = L.map('gpx-map').setView([43.4633, -1.4519], 13);
+
+          const osmStandard = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+          });
+
+          const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 18,
+            attribution: 'Tiles &copy; Esri'
+          });
+
+          osmStandard.addTo(leafletMap);
+
+          L.control.layers({
+            "🗺️ Plan (OpenStreetMap)": osmStandard,
+            "🛰️ Satellite (Esri)": esriSatellite
+          }, null, { position: 'topright' }).addTo(leafletMap);
 
           if (sec.gpxTrack) displayParsedGPX(sec.gpxTrack);
-        } catch(e) {}
-      }, 100);
+        } catch(e) {
+          console.error("Erreur carte:", e);
+        }
+      }, 200);
     }
 
     function displayParsedGPX(gpxXmlText) {
