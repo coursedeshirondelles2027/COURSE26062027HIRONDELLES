@@ -4,12 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Organisateur Événement Trail & Course à Pied</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Leaflet CSS & JS for Interactive Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Inter Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <!-- SDK FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
@@ -32,6 +37,7 @@
 </head>
 <body class="h-full font-sans text-slate-800 bg-slate-100 flex flex-col antialiased">
 
+  <!-- HEADER -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       
@@ -42,7 +48,7 @@
         <div>
           <div class="flex items-center space-x-2">
             <h1 id="event-title-display" class="text-xl font-bold text-slate-900 tracking-tight">Course des Hirondelles 2027</h1>
-            <button onclick="openConfigModal()" class="text-slate-400 hover:text-emerald-600 transition">
+            <button onclick="openConfigModal()" class="text-slate-400 hover:text-emerald-600 transition" title="Configurer l'événement">
               <i class="fa-solid fa-pen-to-square"></i>
             </button>
           </div>
@@ -67,6 +73,7 @@
     </div>
   </header>
 
+  <!-- CONTENEUR PRINCIPAL -->
   <div class="flex-1 flex overflow-hidden">
 
     <aside class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-sm">
@@ -108,13 +115,28 @@
       ],
       sections: [
         {
+          id: "sec-0",
+          title: "Planning Jour J (Agenda)",
+          icon: "fa-calendar-check",
+          type: "agenda",
+          timeline: [
+            { id: "t1", time: "06:30", activity: "Arrivée équipe logistique & Ravitaillement", location: "Site Principal & Relais 5km", resp: "c1", status: "Confirmé" },
+            { id: "t2", time: "07:00", activity: "Ouverture Retrait des Dossards & Inscriptions Jour J", location: "Bureau des dossards", resp: "c1", status: "Confirmé" }
+          ],
+          stickyNotes: [
+            { id: "sn1", title: "Micro & Musique", content: "Le speaker gère la sonorisation de 7h00 à 13h00 non-stop." },
+            { id: "sn2", title: "Ravitaillement Post-Course", content: "S'assurer qu'il est prêt AVANT l'arrivée des premiers du 10km (vers 9h30)." }
+          ]
+        },
+        {
           id: "sec-1",
           title: "1. Course & Tracé (Administratif)",
           icon: "fa-map-location-dot",
           type: "trace_admin",
           tasks: [
             { id: "k1", name: "Création du tracé officiel", resp: "c1", date: "2027-02-15", status: "Validé", notes: "" }
-          ]
+          ],
+          stickyNotes: []
         },
         {
           id: "sec-8",
@@ -123,7 +145,8 @@
           type: "standard",
           tasks: [
             { id: "k19", name: "Démarchage sponsors financiers", resp: "c1", date: "2027-03-01", status: "En cours", notes: "" }
-          ]
+          ],
+          stickyNotes: []
         }
       ]
     };
@@ -159,6 +182,12 @@
       data.sections.forEach(sec => {
         if (!sec.tasks) sec.tasks = [];
         if (!Array.isArray(sec.tasks)) sec.tasks = Object.values(sec.tasks);
+        
+        if (!sec.stickyNotes) sec.stickyNotes = [];
+        if (!Array.isArray(sec.stickyNotes)) sec.stickyNotes = Object.values(sec.stickyNotes);
+
+        if (!sec.timeline) sec.timeline = [];
+        if (!Array.isArray(sec.timeline)) sec.timeline = Object.values(sec.timeline);
       });
 
       if (!data.contacts) data.contacts = [];
@@ -213,17 +242,90 @@
       headerBox.className = 'bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex justify-between items-center';
       headerBox.innerHTML = `
         <h2 class="text-xl font-bold text-slate-900">${sec.title}</h2>
-        <button onclick="addNewTask('${sec.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl">
-          + Ajouter une tâche
-        </button>
+        ${sec.type !== 'agenda' ? `
+          <button onclick="addNewTask('${sec.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl">
+            + Ajouter une tâche
+          </button>
+        ` : ''}
       `;
       container.appendChild(headerBox);
 
-      if (sec.type === 'trace_admin') {
+      if (sec.type === 'agenda') {
+        renderAgendaModule(container, sec);
+      } else if (sec.type === 'trace_admin') {
         renderMapModule(container);
+        renderTasksList(container, sec);
+      } else {
+        renderTasksList(container, sec);
       }
 
-      renderTasksList(container, sec);
+      // Rendu de la section Notes sur TOUTES les sections (agenda inclus s'il n'est pas déjà dans le layout)
+      if (sec.type !== 'agenda') {
+        renderStickyNotesModule(container, sec);
+      }
+    }
+
+    function renderAgendaModule(container, sec) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'grid grid-cols-1 lg:grid-cols-3 gap-6';
+
+      const timelineCol = document.createElement('div');
+      timelineCol.className = 'lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4';
+      timelineCol.innerHTML = `
+        <div class="flex justify-between items-center border-b pb-3">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-clock text-emerald-600"></i> Chronologie Jour J
+          </h3>
+          <button onclick="addAgendaSlot('${sec.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border">
+            + Ajouter créneau
+          </button>
+        </div>
+        <div id="agenda-timeline-items" class="space-y-2"></div>
+      `;
+
+      const notesCol = document.createElement('div');
+      notesCol.id = 'agenda-notes-container';
+
+      wrapper.appendChild(timelineCol);
+      wrapper.appendChild(notesCol);
+      container.appendChild(wrapper);
+
+      const itemsContainer = timelineCol.querySelector('#agenda-timeline-items');
+      sec.timeline.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs';
+        row.innerHTML = `
+          <input type="text" value="${item.time || ''}" onchange="updateAgendaItem('${sec.id}', '${item.id}', 'time', this.value)" class="w-16 font-bold text-emerald-700 bg-white border rounded p-1 text-center">
+          <input type="text" value="${item.activity || ''}" onchange="updateAgendaItem('${sec.id}', '${item.id}', 'activity', this.value)" class="flex-1 font-medium bg-white border rounded p-1">
+          <button onclick="deleteAgendaItem('${sec.id}', '${item.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+        `;
+        itemsContainer.appendChild(row);
+      });
+
+      renderStickyNotesModule(notesCol, sec);
+    }
+
+    function addAgendaSlot(secId) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
+      sec.timeline.push({ id: 't_' + Date.now(), time: "10:00", activity: "Nouvel événement" });
+      saveData();
+      renderActiveSection();
+    }
+
+    function updateAgendaItem(secId, itemId, field, val) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
+      const item = sec.timeline.find(t => t.id === itemId);
+      if (item) { item[field] = val; saveData(); }
+    }
+
+    function deleteAgendaItem(secId, itemId) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
+      sec.timeline = sec.timeline.filter(t => t.id !== itemId);
+      saveData();
+      renderActiveSection();
     }
 
     function renderMapModule(container) {
@@ -245,7 +347,7 @@
 
     function renderTasksList(container, sec) {
       const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4';
+      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
       
       const tasks = sec.tasks || [];
       card.innerHTML = `
@@ -276,20 +378,78 @@
       });
     }
 
+    function renderStickyNotesModule(container, sec) {
+      const card = document.createElement('div');
+      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4';
+      
+      const notes = sec.stickyNotes || [];
+      card.innerHTML = `
+        <div class="flex justify-between items-center border-b pb-3">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-note-sticky text-amber-500"></i> Pense-Bêtes & Notes (${notes.length})
+          </h3>
+          <button onclick="addStickyNote('${sec.id}')" class="text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium px-2.5 py-1.5 rounded-lg border border-amber-200">
+            + Ajouter une note
+          </button>
+        </div>
+        <div id="sticky-notes-container" class="space-y-3"></div>
+      `;
+      container.appendChild(card);
+
+      const notesContainer = card.querySelector('#sticky-notes-container');
+
+      if (notes.length === 0) {
+        notesContainer.innerHTML = `<p class="text-xs text-slate-400 italic">Aucune note pour le moment.</p>`;
+        return;
+      }
+
+      notes.forEach(note => {
+        const item = document.createElement('div');
+        item.className = 'p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1.5 relative group';
+        item.innerHTML = `
+          <button onclick="deleteStickyNote('${sec.id}', '${note.id}')" class="absolute top-2 right-2 text-amber-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-xmark"></i></button>
+          <input type="text" value="${note.title || ''}" placeholder="Titre de la note..." onchange="updateStickyNote('${sec.id}', '${note.id}', 'title', this.value)" class="font-bold text-amber-900 bg-transparent w-full focus:bg-white focus:p-0.5 rounded text-xs">
+          <textarea placeholder="Contenu de la note..." onchange="updateStickyNote('${sec.id}', '${note.id}', 'content', this.value)" class="w-full text-amber-800 text-xs bg-transparent border-none p-0 resize-none focus:bg-white focus:p-1 rounded min-h-[50px]">${note.content || ''}</textarea>
+        `;
+        notesContainer.appendChild(item);
+      });
+    }
+
+    function addStickyNote(secId) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
+      sec.stickyNotes.push({ id: 'sn_' + Date.now(), title: "Titre de la note", content: "" });
+      saveData();
+      renderActiveSection();
+    }
+
+    function updateStickyNote(secId, noteId, field, val) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
+      const note = sec.stickyNotes.find(n => n.id === noteId);
+      if (note) { note[field] = val; saveData(); }
+    }
+
+    function deleteStickyNote(secId, noteId) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
+      sec.stickyNotes = sec.stickyNotes.filter(n => n.id !== noteId);
+      saveData();
+      renderActiveSection();
+    }
+
     function addNewTask(secId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
       
-      const newTask = {
+      sec.tasks.push({
         id: 'k_' + Date.now(),
         name: "Nouvelle tâche",
         resp: "",
         date: "",
         status: "À faire",
         notes: ""
-      };
-
-      sec.tasks.push(newTask);
+      });
       saveData();
       renderActiveSection();
     }
@@ -319,7 +479,8 @@
           id: 'sec_' + Date.now(),
           title: title,
           type: "standard",
-          tasks: []
+          tasks: [],
+          stickyNotes: []
         });
         saveData();
         renderSidebar();
