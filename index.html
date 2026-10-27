@@ -4,40 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Organisateur Événement Trail & Course à Pied</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Leaflet CSS & JS for Interactive Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Inter Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- SDK FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
   <script>
     tailwind.config = {
-      lightMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
-          colors: {
-            brand: {
-              50: '#f0fdf4',
-              100: '#dcfce7',
-              500: '#22c55e',
-              600: '#16a34a',
-              700: '#15803d',
-              900: '#14532d',
-            },
-            accent: {
-              500: '#6366f1',
-              600: '#4f46e5',
-            }
-          }
+          fontFamily: { sans: ['Inter', 'sans-serif'] }
         }
       }
     }
@@ -47,16 +27,11 @@
     .draggable-item:active { cursor: grabbing; }
     .drag-over { border: 2px dashed #6366f1 !important; background-color: #f0f3ff !important; }
     .dragging { opacity: 0.4; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f5f9; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     #gpx-map { height: 450px; width: 100%; border-radius: 0.75rem; z-index: 10; }
   </style>
 </head>
 <body class="h-full font-sans text-slate-800 bg-slate-100 flex flex-col antialiased">
 
-  <!-- TOP HEADER BANNER -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       
@@ -67,7 +42,7 @@
         <div>
           <div class="flex items-center space-x-2">
             <h1 id="event-title-display" class="text-xl font-bold text-slate-900 tracking-tight">Course des Hirondelles 2027</h1>
-            <button onclick="openConfigModal()" class="text-slate-400 hover:text-emerald-600 transition" title="Configurer l'événement">
+            <button onclick="openConfigModal()" class="text-slate-400 hover:text-emerald-600 transition">
               <i class="fa-solid fa-pen-to-square"></i>
             </button>
           </div>
@@ -80,36 +55,11 @@
       </div>
 
       <div class="flex items-center flex-wrap gap-2">
-        <div class="relative flex-1 md:w-64">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-          <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)" placeholder="Rechercher tâche, responsable..." 
-                 class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
-        </div>
-
         <button onclick="saveData(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
           <i class="fa-solid fa-floppy-disk"></i> Enregistrer
         </button>
 
-        <button onclick="openWebmasterModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-2 rounded-lg border border-indigo-200 flex items-center gap-1.5 transition">
-          <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> Panneau Webmaster & IA
-        </button>
-
-        <div class="relative group">
-          <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3 py-2 rounded-lg border border-slate-300 flex items-center gap-1">
-            <i class="fa-solid fa-file-export"></i> Données <i class="fa-solid fa-chevron-down text-[10px]"></i>
-          </button>
-          <div class="absolute right-0 mt-1 w-52 bg-white rounded-lg shadow-lg border border-slate-200 py-1 hidden group-hover:block z-50">
-            <a href="#" onclick="exportJSONData(); return false;" class="block px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"><i class="fa-solid fa-download mr-2 text-emerald-600"></i> Exporter la sauvegarde (JSON)</a>
-            <label class="block px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 cursor-pointer">
-              <i class="fa-solid fa-upload mr-2 text-indigo-600"></i> Importer un fichier JSON
-              <input type="file" onchange="importJSONData(event)" class="hidden" accept=".json">
-            </label>
-            <div class="border-t border-slate-100 my-1"></div>
-            <a href="#" onclick="window.print(); return false;" class="block px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"><i class="fa-solid fa-print mr-2 text-slate-500"></i> Imprimer / Exporter PDF</a>
-          </div>
-        </div>
-
-        <span id="save-indicator" class="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md flex items-center gap-1 font-medium transition-all duration-300">
+        <span id="save-indicator" class="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md flex items-center gap-1 font-medium">
           <i class="fa-solid fa-check"></i> Synchronisé
         </span>
       </div>
@@ -117,24 +67,18 @@
     </div>
   </header>
 
-  <!-- MAIN CONTAINER -->
   <div class="flex-1 flex overflow-hidden">
 
     <aside class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-sm">
       <div class="p-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Modules & Sections</span>
-        <button onclick="addNewCustomSectionPrompt()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2 py-1 rounded flex items-center gap-1 transition" title="Ajouter une section">
+        <button onclick="addNewCustomSectionPrompt()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2 py-1 rounded flex items-center gap-1">
           <i class="fa-solid fa-plus text-[10px]"></i> Section
         </button>
       </div>
 
       <nav id="sidebar-sections-list" class="flex-1 overflow-y-auto p-2 space-y-1">
       </nav>
-
-      <div class="p-3 border-t border-slate-200 bg-slate-50 text-[11px] text-slate-500 flex items-center justify-between">
-        <span>Glissez-déplacez pour réorganiser</span>
-        <i class="fa-solid fa-arrows-up-down text-slate-400"></i>
-      </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto bg-slate-100 p-4 md:p-6" id="main-content-viewport">
@@ -142,108 +86,7 @@
 
   </div>
 
-  <!-- MODALS -->
-
-  <div id="delete-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 space-y-4 text-center">
-      <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
-        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-      </div>
-      <div>
-        <h3 class="text-base font-bold text-slate-900">Confirmer la suppression</h3>
-        <p class="text-xs text-slate-500 mt-1" id="delete-modal-msg">Voulez-vous vraiment supprimer cette section ?</p>
-      </div>
-      <div class="flex justify-center gap-2 pt-2 border-t">
-        <button onclick="closeDeleteModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Annuler</button>
-        <button id="confirm-delete-btn" class="px-4 py-2 text-xs font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700">Supprimer</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="config-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-gear text-emerald-600 mr-2"></i> Configuration de l'événement</h3>
-        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1">Nom de la course / Événement</label>
-          <input type="text" id="cfg-title" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Date</label>
-            <input type="text" id="cfg-date" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="ex: 26 Juin 2027">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Lieu</label>
-            <input type="text" id="cfg-location" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="ex: Saint-Pierre-d'Irube">
-          </div>
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1">Formats & Épreuves (séparés par des virgules)</label>
-          <input type="text" id="cfg-formats" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="ex: 10 km Solo, Relais 2x5km, Marche 10km">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1">Lien de carte Google Maps externe (Optionnel)</label>
-          <input type="text" id="cfg-gmaps" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="https://maps.google.com/...">
-        </div>
-      </div>
-      <div class="flex justify-end gap-2 pt-2 border-t">
-        <button onclick="closeConfigModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Annuler</button>
-        <button onclick="saveConfigModal()" class="px-4 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Enregistrer</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="webmaster-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <div>
-          <h3 class="text-lg font-bold text-indigo-950 flex items-center gap-2">
-            <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> Panneau Webmaster & Générateur IA
-          </h3>
-          <p class="text-xs text-slate-500">Personnalisez votre application ou ajoutez des modules intelligents sur mesure.</p>
-        </div>
-        <button onclick="closeWebmasterModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-
-      <div class="space-y-4 text-xs">
-        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-          <label class="block font-bold text-indigo-900 mb-1"><i class="fa-solid fa-robot mr-1"></i> Assistant IA Integrator</label>
-          <p class="text-slate-600 mb-2">Décrivez une fonction ou une tâche spécifique que vous désirez ajouter.</p>
-          <textarea id="ai-prompt-input" rows="3" class="w-full p-2 border border-indigo-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Ex: Créer une section avec des tâches pour le ravito eau et fruits..."></textarea>
-          <div class="mt-2 flex justify-between items-center">
-            <select id="ai-target-section" class="p-1.5 border border-slate-300 rounded bg-white text-xs">
-              <option value="NEW">Créer dans une NOUVELLE section</option>
-            </select>
-            <button onclick="generateAIWidget()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm">
-              <i class="fa-solid fa-bolt text-amber-300"></i> Générer la fonction
-            </button>
-          </div>
-        </div>
-
-        <div class="border border-slate-200 rounded-lg p-3 space-y-2">
-          <h4 class="font-bold text-slate-800">Gestion globale des Sections</h4>
-          <p class="text-slate-500">Ajouter manuellement une section personnalisée à l'application.</p>
-          <div class="flex gap-2">
-            <input type="text" id="new-section-title" placeholder="Nom de la section..." class="flex-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-            <button onclick="addCustomSectionFromWebmaster()" class="bg-slate-800 text-white font-semibold px-4 py-2 rounded-lg hover:bg-slate-900">
-              + Ajouter Section
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex justify-end pt-2 border-t">
-        <button onclick="closeWebmasterModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Fermer</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // CONFIGURATION FIREBASE
     const firebaseConfig = {
       databaseURL: "https://hiron27-default-rtdb.europe-west1.firebasedatabase.app"
     };
@@ -261,115 +104,17 @@
         gmapsUrl: "https://maps.google.com"
       },
       contacts: [
-        { id: "c1", name: "Jean-Louis", role: "Responsable Administratif / Mairie", phone: "06 00 11 22 33", email: "jeanlouis@club.fr", org: "Club Athlé", notes: "Gère le dossier Mairie et Préfecture" },
-        { id: "c2", name: "Responsable Comm", role: "Communication & Réseaux", phone: "06 11 22 33 44", email: "comm@club.fr", org: "Club Athlé", notes: "Carte blanche A à Z - Début comm le 15 mai" },
-        { id: "c3", name: "Intersport Bayonne", role: "Sponsor / Partenaire Equipement", phone: "05 59 00 00 00", email: "contact@intersport.fr", org: "Intersport", notes: "Fournit lots et dotations vainqueurs" },
-        { id: "c4", name: "Atol Juyar", role: "Sponsor Lunettes", phone: "05 59 11 11 11", email: "atol@juyar.fr", org: "Atol", notes: "À contacter pour des lunettes vainqueurs" },
-        { id: "c5", name: "PB Organisation", role: "Chronométrage & Inscriptions", phone: "05 59 22 22 22", email: "contact@pb-organisation.com", org: "PB Org", notes: "Plateforme en ligne" }
+        { id: "c1", name: "Jean-Louis", role: "Responsable Administratif / Mairie", phone: "", email: "", org: "Club Athlé", notes: "" }
       ],
       sections: [
-        {
-          id: "sec-0",
-          title: "Planning Jour J (Agenda)",
-          icon: "fa-calendar-check",
-          type: "agenda",
-          timeline: [
-            { id: "t1", time: "06:30", activity: "Arrivée équipe logistique & Ravitaillement", location: "Site Principal & Relais 5km", resp: "c1", status: "Confirmé" },
-            { id: "t2", time: "07:00", activity: "Ouverture Retrait des Dossards & Inscriptions Jour J", location: "Bureau des dossards", resp: "c1", status: "Confirmé" },
-            { id: "t3", time: "08:15", activity: "Mise en place des 50 bénévoles & Signaleurs", location: "Sur tout le circuit", resp: "c1", status: "Confirmé" },
-            { id: "t4", time: "08:45", activity: "Briefing Coureurs & Marcheurs par le Speaker", location: "Ligne de Départ", resp: "c2", status: "Confirmé" },
-            { id: "t5", time: "09:00", activity: "DÉPART SIMULTANÉ : 10km, Relais et Marche 10km", location: "Ligne de départ", resp: "c1", status: "Confirmé" },
-            { id: "t6", time: "11:30", activity: "Cérémonie de Remise des Prix, Podiums & Tombola", location: "Podium principal", resp: "c2", status: "Confirmé" }
-          ],
-          stickyNotes: [
-            { id: "sn1", title: "Micro & Musique", content: "Le speaker gère la sonorisation de 7h00 à 13h00 non-stop." },
-            { id: "sn2", title: "Ravitaillement Post-Course", content: "S'assurer qu'il est prêt AVANT l'arrivée des premiers du 10km (vers 9h30)." }
-          ],
-          files: []
-        },
         {
           id: "sec-1",
           title: "1. Course & Tracé (Administratif)",
           icon: "fa-map-location-dot",
           type: "trace_admin",
-          gpxTrack: null,
           tasks: [
-            { id: "k1", name: "Création du tracé officiel Google Maps & Export GPX (5km/10km)", resp: "c1", date: "2027-02-15", status: "Validé", notes: "Tracé commun 2 boucles de 5km" },
-            { id: "k2", name: "Dépôt du dossier administratif Cerfa en Mairie par Jean-Louis", resp: "c1", date: "2027-03-01", status: "En cours", notes: "Attendre validation tracé par le comité" },
-            { id: "k3", name: "Autorisations passages sur domaines privés", resp: "c1", date: "2027-04-01", status: "À faire", notes: "Informer les riverains" },
-            { id: "k4", name: "Repérage terrain : rubalise, barrières et zones à défricher", resp: "c1", date: "2027-05-01", status: "À faire", notes: "Prévoir équipe débroussaillage" }
-          ],
-          files: [
-            { name: "Cerfa_15824_Manifestation_Sportive.pdf", size: "245 KB", type: "application/pdf" }
+            { id: "k1", name: "Création du tracé officiel", resp: "c1", date: "2027-02-15", status: "Validé", notes: "" }
           ]
-        },
-        {
-          id: "sec-2",
-          title: "2. Bénévoles Courses",
-          icon: "fa-person-digging",
-          type: "standard",
-          tasks: [
-            { id: "k5", name: "Lancer le recrutement des 50 bénévoles du club (J-3 mois)", resp: "c1", date: "2027-03-26", status: "À faire", notes: "Ne pas lancer trop tôt pour éviter oublis" },
-            { id: "k6", name: "Affectation des signaleurs aux carrefours du circuit", resp: "c1", date: "2027-06-10", status: "À faire", notes: "Prévoir gilets jaunes et chasubles" },
-            { id: "k7", name: "Désignation Vélos / Motos ouverture et fermeture (serre-file)", resp: "c1", date: "2027-06-15", status: "À faire", notes: "1 vélo ouvreur + 1 vtt serre-file" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-3",
-          title: "3. Bénévoles Hors Courses",
-          icon: "fa-warehouse",
-          type: "standard",
-          tasks: [
-            { id: "k8", name: "Equipe installation barnums, tables, chaises et podium", resp: "c1", date: "2027-06-25", status: "À faire", notes: "Montage la veille à partir de 16h" },
-            { id: "k9", name: "Gestion des parkings & Fléchage arrivée", resp: "c1", date: "2027-06-26", status: "À faire", notes: "3 bénévoles dédiés au guidage véhicules" },
-            { id: "k10", name: "Équipe propreté et rangement du site après-course", resp: "c1", date: "2027-06-26", status: "À faire", notes: "Nettoyage complet du ravitaillement" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-4",
-          title: "4. Inscriptions en Ligne",
-          icon: "fa-laptop",
-          type: "standard",
-          tasks: [
-            { id: "k11", name: "Avertir et paramétrer la course sur PB Organisation", resp: "c5", date: "2027-02-01", status: "Validé", notes: "Formats: 10k, Relais, Marche" },
-            { id: "k12", name: "Configuration de la vérification PPS / Certificats médicaux", resp: "c5", date: "2027-02-15", status: "Validé", notes: "Intégration du Parcours Prévention Santé" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-5",
-          title: "5. Secours & Sécurité",
-          icon: "fa-kit-medical",
-          type: "standard",
-          tasks: [
-            { id: "k13", name: "Réservation de la société/association de secours agréée (DPS)", resp: "c1", date: "2027-02-20", status: "En cours", notes: "Croix-Rouge ou Protection Civile" },
-            { id: "k14", name: "Mise à disposition du défibrillateur DAE et liaisons radio", resp: "c1", date: "2027-06-25", status: "À faire", notes: "Vérifier batteries radios" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-6",
-          title: "6. Bureau des Dossards (Jour J)",
-          icon: "fa-id-card",
-          type: "standard",
-          tasks: [
-            { id: "k15", name: "Affecter les bénévoles du club au retrait dossards", resp: "c1", date: "2027-06-01", status: "À faire", notes: "Uniquement bénévoles du club" },
-            { id: "k16", name: "Impression des listings alphabétiques et vérification dossiers", resp: "c5", date: "2027-06-25", status: "À faire", notes: "Séparez coureurs, relais et marcheurs" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-7",
-          title: "7. Inscriptions Jour J & Caisses",
-          icon: "fa-cash-register",
-          type: "standard",
-          tasks: [
-            { id: "k17", name: "Prévoir le fond de caisse (monnaie espèces)", resp: "c1", date: "2027-06-24", status: "À faire", notes: "Prévoir 150€ en petites coupures" },
-            { id: "k18", name: "Configuration TPE carte bancaire / SumUp", resp: "c1", date: "2027-06-24", status: "À faire", notes: "Tester la connexion 4G" }
-          ],
-          files: []
         },
         {
           id: "sec-8",
@@ -377,99 +122,8 @@
           icon: "fa-handshake",
           type: "standard",
           tasks: [
-            { id: "k19", name: "Démarchage sponsors financiers et partenaires matériel", resp: "c3", date: "2027-03-01", status: "En cours", notes: "Demander ravitaillements et lots" },
-            { id: "k20", name: "Trouver les 3 gros lots pour la Tombola (Sans les acheter)", resp: "c1", date: "2027-04-15", status: "À faire", notes: "Contacter commerçants locaux" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-9",
-          title: "9. Inscriptions & Suivi Statistiques",
-          icon: "fa-chart-pie",
-          type: "stats",
-          statsData: {
-            marche: 120,
-            solo10k: 180,
-            relais: 40,
-            enfants: 30
-          },
-          tasks: [
-            { id: "k21", name: "Suivi hebdomadaire de la jauge d'inscrits", resp: "c5", date: "2027-05-15", status: "En cours", notes: "Ajuster commandes ravitaillement si besoin" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-10",
-          title: "10. Dotations Coureur & Marcheur",
-          icon: "fa-gift",
-          type: "standard",
-          tasks: [
-            { id: "k22", name: "Sourcing des dotations participants coureurs et marcheurs", resp: "c1", date: "2027-03-01", status: "En cours", notes: "À définir rapidement" },
-            { id: "k23", name: "Mise en sachets des sacoches / Goodie bags", resp: "c1", date: "2027-06-24", status: "À faire", notes: "Faire participer les jeunes du club" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-11",
-          title: "11. Récompenses & Podiums",
-          icon: "fa-trophy",
-          type: "standard",
-          tasks: [
-            { id: "k24", name: "Commandes des boïnas (bérets), maillots club et lots Intersport", resp: "c3", date: "2027-04-01", status: "À faire", notes: "Contacter Intersport" },
-            { id: "k25", name: "Contacter Atol Juyar pour des lots lunettes", resp: "c4", date: "2027-04-10", status: "À faire", notes: "Voir si dotation optique possible" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-12",
-          title: "12. Ravitaillements (Course & Post-Course)",
-          icon: "fa-apple-whole",
-          type: "standard",
-          tasks: [
-            { id: "k26", name: "Organisation du ravitaillement milieu de course (5e km / Relais)", resp: "c1", date: "2027-06-01", status: "À faire", notes: "Doit être prêt AVANT les coureurs" },
-            { id: "k27", name: "Transport solide/liquide, verres, poubelles et sacs poubelle sur site", resp: "c1", date: "2027-06-26", status: "À faire", notes: "Équipe logistique transport matin J-J" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-13",
-          title: "13. Buvette & Restauration",
-          icon: "fa-utensils",
-          type: "standard",
-          tasks: [
-            { id: "k28", name: "Commande fûts de bière, boissons, frites et grillades", resp: "c1", date: "2027-06-01", status: "À faire", notes: "Prévoir stock bénévoles" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-14",
-          title: "14. Tombola",
-          icon: "fa-ticket",
-          type: "standard",
-          tasks: [
-            { id: "k29", name: "Vente de tickets de tombola en présentiel le jour J", resp: "c1", date: "2027-06-26", status: "À faire", notes: "Pas de vente en ligne préalable" },
-            { id: "k30", name: "Animation du tirage au sort par SMS (comme l'année passée)", resp: "c2", date: "2027-06-26", status: "À faire", notes: "Simple et efficace" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-15",
-          title: "15. Partenaires & Communication",
-          icon: "fa-bullhorn",
-          type: "standard",
-          tasks: [
-            { id: "k31", name: "Lancer la communication légère à J-2 mois", resp: "c2", date: "2027-04-26", status: "À faire", notes: "Amorçage réseaux sociaux" },
-            { id: "k32", name: "Pause communication à J-1 mois (Course du Moun)", resp: "c2", date: "2027-05-01", status: "À faire", notes: "Respect du calendrier des courses" },
-            { id: "k33", name: "Communication intensive à partir du 15 mai 2027", resp: "c2", date: "2027-05-15", status: "À faire", notes: "Carte blanche au responsable comm" }
-          ],
-          files: []
-        },
-        {
-          id: "sec-contacts",
-          title: "16. Répertoire de Contacts",
-          icon: "fa-address-book",
-          type: "contacts",
-          files: []
+            { id: "k19", name: "Démarchage sponsors financiers", resp: "c1", date: "2027-03-01", status: "En cours", notes: "" }
+          ]
         }
       ]
     };
@@ -477,647 +131,175 @@
     let appData = null;
     let activeSectionId = null;
     let leafletMap = null;
-    let leafletPolyline = null;
-    let pendingDeleteSecId = null;
 
-    // INITIALISATION TEMPS RÉEL FIREBASE
     function initAppData() {
       eventRef.on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          appData = data;
-          // Conversion automatique si les sections sont stockées sous forme d'objet par Firebase
-          if (appData.sections && !Array.isArray(appData.sections)) {
-            appData.sections = Object.values(appData.sections);
-          }
-          if (appData.contacts && !Array.isArray(appData.contacts)) {
-            appData.contacts = Object.values(appData.contacts);
-          }
+          appData = sanitizeData(data);
         } else {
-          appData = JSON.parse(JSON.stringify(defaultData));
+          appData = defaultData;
           eventRef.set(appData);
         }
-        if (!activeSectionId && appData.sections && appData.sections.length > 0) {
+        
+        if (!activeSectionId && appData.sections.length > 0) {
           activeSectionId = appData.sections[0].id;
         }
+
         renderHeader();
         renderSidebar();
         renderActiveSection();
       });
     }
 
-    // SAUVEGARDE TEMPS RÉEL FIREBASE
-    function saveData(explicitNotification = false) {
-      if (!appData) return;
-      eventRef.set(appData)
-        .then(() => {
-          const ind = document.getElementById('save-indicator');
-          if (ind) {
-            ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-emerald-600"></i> Synchronisé';
-            setTimeout(() => {
-              ind.innerHTML = '<i class="fa-solid fa-check"></i> Synchronisé';
-            }, 1500);
-          }
-          if (explicitNotification) {
-            alert("Modifications enregistrées et transmises à l'ensemble de l'équipe !");
-          }
-        })
-        .catch((err) => {
-          console.error("Erreur de sauvegarde :", err);
-          alert("Erreur lors de la sauvegarde en ligne.");
-        });
+    function sanitizeData(data) {
+      if (!data.sections) data.sections = [];
+      if (!Array.isArray(data.sections)) data.sections = Object.values(data.sections);
+
+      data.sections.forEach(sec => {
+        if (!sec.tasks) sec.tasks = [];
+        if (!Array.isArray(sec.tasks)) sec.tasks = Object.values(sec.tasks);
+      });
+
+      if (!data.contacts) data.contacts = [];
+      if (!Array.isArray(data.contacts)) data.contacts = Object.values(data.contacts);
+
+      return data;
     }
 
-    window.onload = function() {
-      initAppData();
-      populateAITargetDropdown();
-    };
+    function saveData(explicitNotification = false) {
+      if (!appData) return;
+      eventRef.set(appData).then(() => {
+        if (explicitNotification) alert("Données enregistrées.");
+      });
+    }
 
     function renderHeader() {
-      document.getElementById('event-title-display').innerText = appData.config.title || "Événement Trail";
-      document.getElementById('event-date-display').innerText = appData.config.date || "Date non définie";
-      document.getElementById('event-location-display').innerText = appData.config.location || "Lieu non défini";
-      document.getElementById('event-formats-display').innerText = Array.isArray(appData.config.formats) ? appData.config.formats.join(', ') : (appData.config.formats || "");
+      document.getElementById('event-title-display').innerText = appData.config.title || "";
+      document.getElementById('event-date-display').innerText = appData.config.date || "";
+      document.getElementById('event-location-display').innerText = appData.config.location || "";
     }
 
     function renderSidebar() {
       const container = document.getElementById('sidebar-sections-list');
       container.innerHTML = '';
-      if (!appData.sections) return;
-      const canDelete = appData.sections.length > 1;
 
-      appData.sections.forEach((sec, index) => {
+      appData.sections.forEach((sec) => {
         const isActive = sec.id === activeSectionId;
         const item = document.createElement('div');
-        item.className = `draggable-item flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition cursor-pointer group ${
-          isActive ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'
+        item.className = `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium cursor-pointer ${
+          isActive ? 'bg-emerald-600 text-white' : 'text-slate-700 hover:bg-slate-100'
         }`;
-        item.draggable = true;
-        item.dataset.index = index;
-
-        item.addEventListener('dragstart', handleSecDragStart);
-        item.addEventListener('dragover', handleSecDragOver);
-        item.addEventListener('drop', handleSecDrop);
-        item.addEventListener('dragend', handleSecDragEnd);
-
-        item.onclick = (e) => {
-          if (e.target.closest('.delete-sec-btn')) return;
+        
+        item.onclick = () => {
           activeSectionId = sec.id;
           renderSidebar();
           renderActiveSection();
         };
 
-        item.innerHTML = `
-          <div class="flex items-center space-x-2.5 overflow-hidden flex-1 mr-2">
-            <i class="fa-solid ${sec.icon || 'fa-folder'} ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-emerald-600'} text-sm w-4 text-center shrink-0"></i>
-            <span class="truncate">${sec.title}</span>
-          </div>
-          <div class="flex items-center space-x-1 shrink-0">
-            ${canDelete ? `
-              <button type="button" class="delete-sec-btn p-1.5 rounded ${isActive ? 'text-emerald-200 hover:text-white hover:bg-emerald-700' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'} transition" title="Supprimer la section">
-                <i class="fa-solid fa-trash-can text-[11px]"></i>
-              </button>
-            ` : ''}
-            <i class="fa-solid fa-grip-vertical ${isActive ? 'text-emerald-200' : 'text-slate-300'} text-[11px]"></i>
-          </div>
-        `;
-
-        if (canDelete) {
-          const btn = item.querySelector('.delete-sec-btn');
-          if (btn) {
-            btn.onclick = function(event) {
-              event.stopPropagation();
-              event.preventDefault();
-              openDeleteModal(sec.id);
-            };
-          }
-        }
+        item.innerHTML = `<span>${sec.title}</span>`;
         container.appendChild(item);
       });
     }
 
-    let draggedSecIndex = null;
-    function handleSecDragStart(e) {
-      draggedSecIndex = parseInt(this.dataset.index);
-      this.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    }
-    function handleSecDragOver(e) {
-      if (e.preventDefault) e.preventDefault();
-      this.classList.add('drag-over');
-      return false;
-    }
-    function handleSecDrop(e) {
-      e.stopPropagation();
-      this.classList.remove('drag-over');
-      const targetIndex = parseInt(this.dataset.index);
-      if (draggedSecIndex !== null && draggedSecIndex !== targetIndex) {
-        const movedItem = appData.sections.splice(draggedSecIndex, 1)[0];
-        appData.sections.splice(targetIndex, 0, movedItem);
-        saveData();
-        renderSidebar();
-      }
-      return false;
-    }
-    function handleSecDragEnd() {
-      this.classList.remove('dragging');
-      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-    }
-
     function renderActiveSection() {
       const container = document.getElementById('main-content-viewport');
-      if (!appData.sections) return;
       const sec = appData.sections.find(s => s.id === activeSectionId);
       if (!sec) return;
 
       container.innerHTML = '';
 
       const headerBox = document.createElement('div');
-      headerBox.className = 'bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4';
+      headerBox.className = 'bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex justify-between items-center';
       headerBox.innerHTML = `
-        <div class="flex items-center space-x-3">
-          <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-            <i class="fa-solid ${sec.icon || 'fa-folder'} text-xl"></i>
-          </div>
-          <div>
-            <h2 class="text-xl font-bold text-slate-900 focus:outline-none focus:bg-slate-50 px-1 rounded" contenteditable="true" onblur="updateSectionTitle('${sec.id}', this.innerText)">${sec.title}</h2>
-            <p class="text-xs text-slate-500">Poste & Module d'organisation • Modifiez les informations directement</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          ${sec.type === 'standard' || sec.type === 'trace_admin' ? `
-            <button onclick="addNewTaskPrompt('${sec.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-sm">
-              <i class="fa-solid fa-plus"></i> Ajouter une tâche
-            </button>
-          ` : ''}
-        </div>
+        <h2 class="text-xl font-bold text-slate-900">${sec.title}</h2>
+        <button onclick="addNewTask('${sec.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl">
+          + Ajouter une tâche
+        </button>
       `;
       container.appendChild(headerBox);
 
-      if (sec.type === 'agenda') {
-        renderAgendaModule(container, sec);
-      } else if (sec.type === 'trace_admin') {
-        renderTraceAdminModule(container, sec);
-      } else if (sec.type === 'contacts') {
-        renderContactsDirectoryModule(container);
-      } else if (sec.type === 'stats') {
-        renderStatsModule(container, sec);
-      } else {
-        renderStandardTaskModule(container, sec);
+      if (sec.type === 'trace_admin') {
+        renderMapModule(container);
       }
 
-      renderSectionAttachments(container, sec);
+      renderTasksList(container, sec);
     }
 
-    function updateSectionTitle(secId, newTitle) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (sec && newTitle.trim() !== "") {
-        sec.title = newTitle.trim();
-        saveData();
-        renderSidebar();
-      }
-    }
-
-    function renderAgendaModule(container, sec) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'grid grid-cols-1 lg:grid-cols-3 gap-6';
-
-      const timelineCol = document.createElement('div');
-      timelineCol.className = 'lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4';
-      timelineCol.innerHTML = `
-        <div class="flex justify-between items-center border-b pb-3">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-clock text-emerald-600"></i> Chronologie Jour J
-          </h3>
-          <button onclick="addAgendaSlot('${sec.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border">
-            + Ajouter créneau
-          </button>
-        </div>
-        <div id="agenda-timeline-items" class="space-y-2"></div>
-      `;
-
-      const notesCol = document.createElement('div');
-      notesCol.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4';
-      notesCol.innerHTML = `
-        <div class="flex justify-between items-center border-b pb-3">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-note-sticky text-amber-500"></i> Pense-Bêtes & Notes
-          </h3>
-          <button onclick="addStickyNote('${sec.id}')" class="text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium px-2.5 py-1.5 rounded-lg border border-amber-200">
-            + Note
-          </button>
-        </div>
-        <div id="agenda-sticky-notes" class="space-y-3"></div>
-      `;
-
-      wrapper.appendChild(timelineCol);
-      wrapper.appendChild(notesCol);
-      container.appendChild(wrapper);
-
-      const itemsContainer = timelineCol.querySelector('#agenda-timeline-items');
-      const timelineArr = Array.isArray(sec.timeline) ? sec.timeline : (sec.timeline ? Object.values(sec.timeline) : []);
-      timelineArr.forEach((item) => {
-        const row = document.createElement('div');
-        row.className = 'flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-emerald-300 transition text-xs';
-        row.innerHTML = `
-          <input type="text" value="${item.time || ''}" oninput="updateAgendaItem('${sec.id}', '${item.id}', 'time', this.value)" class="w-16 font-bold text-emerald-700 bg-white border rounded p-1 text-center">
-          <input type="text" value="${item.activity || ''}" oninput="updateAgendaItem('${sec.id}', '${item.id}', 'activity', this.value)" class="flex-1 font-medium bg-white border rounded p-1">
-          <input type="text" value="${item.location || ''}" oninput="updateAgendaItem('${sec.id}', '${item.id}', 'location', this.value)" placeholder="Lieu" class="w-28 bg-white border rounded p-1 text-slate-500">
-          <select onchange="updateAgendaItem('${sec.id}', '${item.id}', 'resp', this.value)" class="bg-white border rounded p-1 text-slate-600">
-            ${getContactOptionsHtml(item.resp)}
-          </select>
-          <button onclick="deleteAgendaItem('${sec.id}', '${item.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
-        `;
-        itemsContainer.appendChild(row);
-      });
-
-      const notesContainer = notesCol.querySelector('#agenda-sticky-notes');
-      const notesArr = Array.isArray(sec.stickyNotes) ? sec.stickyNotes : (sec.stickyNotes ? Object.values(sec.stickyNotes) : []);
-      notesArr.forEach(note => {
-        const card = document.createElement('div');
-        card.className = 'p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1.5 relative group';
-        card.innerHTML = `
-          <button onclick="deleteStickyNote('${sec.id}', '${note.id}')" class="absolute top-2 right-2 text-amber-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-xmark"></i></button>
-          <input type="text" value="${note.title || ''}" oninput="updateStickyNote('${sec.id}', '${note.id}', 'title', this.value)" class="font-bold text-amber-900 bg-transparent w-full focus:bg-white focus:p-0.5 rounded">
-          <textarea oninput="updateStickyNote('${sec.id}', '${note.id}', 'content', this.value)" class="w-full text-amber-800 text-xs bg-transparent border-none p-0 resize-none focus:bg-white focus:p-1 rounded">${note.content || ''}</textarea>
-        `;
-        notesContainer.appendChild(card);
-      });
-    }
-
-    function addAgendaSlot(secId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec.timeline) sec.timeline = [];
-      if (!Array.isArray(sec.timeline)) sec.timeline = Object.values(sec.timeline);
-      sec.timeline.push({ id: 't_' + Date.now(), time: "10:00", activity: "Nouvel événement", location: "Zone Départ", resp: "", status: "Confirmé" });
-      saveData();
-      renderActiveSection();
-    }
-    function updateAgendaItem(secId, itemId, field, val) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const timelineArr = Array.isArray(sec.timeline) ? sec.timeline : Object.values(sec.timeline || {});
-      const item = timelineArr.find(t => t.id === itemId);
-      if (item) { item[field] = val; saveData(); }
-    }
-    function deleteAgendaItem(secId, itemId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const timelineArr = Array.isArray(sec.timeline) ? sec.timeline : Object.values(sec.timeline || {});
-      sec.timeline = timelineArr.filter(t => t.id !== itemId);
-      saveData();
-      renderActiveSection();
-    }
-    function addStickyNote(secId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec.stickyNotes) sec.stickyNotes = [];
-      if (!Array.isArray(sec.stickyNotes)) sec.stickyNotes = Object.values(sec.stickyNotes);
-      sec.stickyNotes.push({ id: 'sn_' + Date.now(), title: "Note", content: "Détails..." });
-      saveData();
-      renderActiveSection();
-    }
-    function updateStickyNote(secId, noteId, field, val) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const notesArr = Array.isArray(sec.stickyNotes) ? sec.stickyNotes : Object.values(sec.stickyNotes || {});
-      const note = notesArr.find(n => n.id === noteId);
-      if (note) { note[field] = val; saveData(); }
-    }
-    function deleteStickyNote(secId, noteId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const notesArr = Array.isArray(sec.stickyNotes) ? sec.stickyNotes : Object.values(sec.stickyNotes || {});
-      sec.stickyNotes = notesArr.filter(n => n.id !== noteId);
-      saveData();
-      renderActiveSection();
-    }
-
-    function parseGPXText(gpxXmlText) {
-      try {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(gpxXmlText, "text/xml");
-        const points = [];
-        const elements = xmlDoc.querySelectorAll("trkpt, wpt, rtept");
-        elements.forEach(pt => {
-          const lat = parseFloat(pt.getAttribute("lat"));
-          const lon = parseFloat(pt.getAttribute("lon"));
-          const eleNode = pt.querySelector("ele");
-          const ele = eleNode ? parseFloat(eleNode.textContent) : 0;
-          if (!isNaN(lat) && !isNaN(lon)) { points.push({ lat, lon, ele }); }
-        });
-        return points;
-      } catch(err) { return []; }
-    }
-
-    function calculateHaversineDistance(p1, p2) {
-      const R = 6371000;
-      const rad = Math.PI / 180;
-      const dLat = (p2.lat - p1.lat) * rad;
-      const dLon = (p2.lon - p1.lon) * rad;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(p1.lat * rad) * Math.cos(p2.lat * rad) * Math.sin(dLon/2) * Math.sin(dLon/2);
-      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-    }
-
-    function calculateGPXStats(points) {
-      if (!points || points.length < 2) return { distanceKm: 0, eleGain: 0 };
-      let totalDist = 0, totalGain = 0;
-      for (let i = 1; i < points.length; i++) {
-        totalDist += calculateHaversineDistance(points[i-1], points[i]);
-        const eleDiff = points[i].ele - points[i-1].ele;
-        if (eleDiff > 0.5) totalGain += eleDiff;
-      }
-      return { distanceKm: (totalDist / 1000).toFixed(2), eleGain: Math.round(totalGain) };
-    }
-
-    function renderTraceAdminModule(container, sec) {
+    function renderMapModule(container) {
       const mapCard = document.createElement('div');
-      mapCard.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 space-y-4';
-      mapCard.innerHTML = `
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
-          <div>
-            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <i class="fa-solid fa-map text-emerald-600"></i> Carte Interactive Multi-Couches & Visualiseur GPX
-            </h3>
-            <p class="text-xs text-slate-500">Choisissez la vue Satellite ou Plan en haut à droite.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 shadow-sm transition">
-              <i class="fa-solid fa-file-code"></i> Charger Fichier GPX
-              <input type="file" onchange="handleGPXUpload(event, '${sec.id}')" accept=".gpx" class="hidden">
-            </label>
-            <a href="${appData.config.gmapsUrl || '#'}" target="_blank" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-lg border flex items-center gap-1">
-              <i class="fa-solid fa-arrow-up-right-from-square text-slate-400"></i> Google Maps
-            </a>
-          </div>
-        </div>
-
-        <div id="gpx-stats-bar" class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center text-xs">
-          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Distance</span><span id="gpx-dist-val" class="text-base font-extrabold text-emerald-700">-- km</span></div>
-          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Dénivelé (D+)</span><span id="gpx-ele-val" class="text-base font-extrabold text-indigo-700">-- m</span></div>
-          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Points</span><span id="gpx-pts-val" class="text-base font-bold text-slate-700">--</span></div>
-          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Statut</span><span id="gpx-status-val" class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full inline-block mt-0.5">En attente</span></div>
-        </div>
-
-        <div id="gpx-map-wrapper" class="relative">
-          <div id="gpx-map" class="bg-slate-100 border border-slate-200"></div>
-        </div>
-      `;
+      mapCard.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6';
+      mapCard.innerHTML = `<div id="gpx-map"></div>`;
       container.appendChild(mapCard);
-      renderStandardTaskModule(container, sec);
 
       setTimeout(() => {
-        try {
-          if (leafletMap) { leafletMap.remove(); }
-          
-          leafletMap = L.map('gpx-map').setView([43.4633, -1.4519], 13);
-
-          const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-          });
-
-          const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 18,
-            attribution: 'Tiles &copy; Esri'
-          });
-
-          osmStandard.addTo(leafletMap);
-
-          L.control.layers({
-            "🗺️ Plan (OpenStreetMap)": osmStandard,
-            "🛰️ Satellite (Esri)": esriSatellite
-          }, null, { position: 'topright' }).addTo(leafletMap);
-
-          leafletMap.invalidateSize();
-
-          if (sec.gpxTrack) displayParsedGPX(sec.gpxTrack);
-        } catch(e) {
-          console.error("Erreur carte:", e);
-        }
-      }, 300);
-    }
-
-    function displayParsedGPX(gpxXmlText) {
-      const points = parseGPXText(gpxXmlText);
-      if (!points || points.length === 0) return;
-      const latLngs = points.map(p => [p.lat, p.lon]);
-
-      if (leafletMap) {
-        if (leafletPolyline) leafletMap.removeLayer(leafletPolyline);
-        leafletPolyline = L.polyline(latLngs, { color: '#22c55e', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(leafletMap);
-        leafletMap.fitBounds(leafletPolyline.getBounds(), { padding: [30, 30] });
+        if (leafletMap) { leafletMap.remove(); }
+        leafletMap = L.map('gpx-map').setView([43.4633, -1.4519], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(leafletMap);
         leafletMap.invalidateSize();
-      }
-
-      const stats = calculateGPXStats(points);
-      document.getElementById('gpx-dist-val').innerText = `${stats.distanceKm} km`;
-      document.getElementById('gpx-ele-val').innerText = `+${stats.eleGain} m`;
-      document.getElementById('gpx-pts-val').innerText = points.length;
-      document.getElementById('gpx-status-val').innerText = "Tracé Chargé";
-      document.getElementById('gpx-status-val').className = "text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-0.5";
+      }, 100);
     }
 
-    function handleGPXUpload(event, secId) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const sec = appData.sections.find(s => s.id === secId);
-        if (sec) {
-          sec.gpxTrack = e.target.result;
-          saveData();
-          displayParsedGPX(e.target.result);
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function renderContactsDirectoryModule(container) {
+    function renderTasksList(container, sec) {
       const card = document.createElement('div');
       card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4';
-      card.innerHTML = `
-        <div class="flex justify-between items-center border-b pb-3">
-          <div>
-            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <i class="fa-solid fa-address-book text-emerald-600"></i> Répertoire Global des Contacts
-            </h3>
-          </div>
-          <button onclick="addContactPrompt()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">
-            <i class="fa-solid fa-user-plus"></i> Nouveau Contact
-          </button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-700">
-            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] border-b">
-              <tr>
-                <th class="p-2.5">Nom</th>
-                <th class="p-2.5">Rôle</th>
-                <th class="p-2.5">Téléphone</th>
-                <th class="p-2.5">Email</th>
-                <th class="p-2.5">Entité</th>
-                <th class="p-2.5">Notes</th>
-                <th class="p-2.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="contacts-table-body" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
-      `;
-      container.appendChild(card);
-
-      const tbody = card.querySelector('#contacts-table-body');
-      const contactsArr = Array.isArray(appData.contacts) ? appData.contacts : (appData.contacts ? Object.values(appData.contacts) : []);
-      contactsArr.forEach(c => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50/80 transition';
-        tr.innerHTML = `
-          <td class="p-2.5 font-bold text-slate-900"><input type="text" value="${c.name || ''}" oninput="updateContact('${c.id}', 'name', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-          <td class="p-2.5"><input type="text" value="${c.role || ''}" oninput="updateContact('${c.id}', 'role', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-          <td class="p-2.5"><input type="text" value="${c.phone || ''}" oninput="updateContact('${c.id}', 'phone', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-          <td class="p-2.5"><input type="text" value="${c.email || ''}" oninput="updateContact('${c.id}', 'email', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-          <td class="p-2.5"><input type="text" value="${c.org || ''}" oninput="updateContact('${c.id}', 'org', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-          <td class="p-2.5"><input type="text" value="${c.notes || ''}" oninput="updateContact('${c.id}', 'notes', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-          <td class="p-2.5 text-right">
-            <button onclick="deleteContact('${c.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function addContactPrompt() {
-      if (!appData.contacts) appData.contacts = [];
-      if (!Array.isArray(appData.contacts)) appData.contacts = Object.values(appData.contacts);
-      appData.contacts.push({ id: 'c_' + Date.now(), name: "Nouveau Contact", role: "Bénévole", phone: "", email: "", org: "Club", notes: "" });
-      saveData();
-      renderActiveSection();
-    }
-    function updateContact(id, field, val) {
-      const contactsArr = Array.isArray(appData.contacts) ? appData.contacts : Object.values(appData.contacts || {});
-      const c = contactsArr.find(x => x.id === id);
-      if (c) { c[field] = val; saveData(); }
-    }
-    function deleteContact(id) {
-      const contactsArr = Array.isArray(appData.contacts) ? appData.contacts : Object.values(appData.contacts || {});
-      appData.contacts = contactsArr.filter(x => x.id !== id);
-      saveData();
-      renderActiveSection();
-    }
-
-    function renderStatsModule(container, sec) {
-      if (!sec.statsData) sec.statsData = { marche: 0, solo10k: 0, relais: 0, enfants: 0 };
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 space-y-4';
-      card.innerHTML = `
-        <h3 class="font-bold text-slate-800 text-sm border-b pb-2"><i class="fa-solid fa-chart-line text-emerald-600 mr-2"></i> Statistiques & Jauge d'inscriptions</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-          <div class="p-3 bg-slate-50 border rounded-xl"><span class="block text-xs text-slate-500">10 km Solo</span><input type="number" value="${sec.statsData.solo10k || 0}" oninput="updateStatCount('${sec.id}', 'solo10k', this.value)" class="text-2xl font-black text-emerald-700 bg-transparent text-center w-full"></div>
-          <div class="p-3 bg-slate-50 border rounded-xl"><span class="block text-xs text-slate-500">10 km Relais</span><input type="number" value="${sec.statsData.relais || 0}" oninput="updateStatCount('${sec.id}', 'relais', this.value)" class="text-2xl font-black text-indigo-700 bg-transparent text-center w-full"></div>
-          <div class="p-3 bg-slate-50 border rounded-xl"><span class="block text-xs text-slate-500">Marche 10 km</span><input type="number" value="${sec.statsData.marche || 0}" oninput="updateStatCount('${sec.id}', 'marche', this.value)" class="text-2xl font-black text-amber-700 bg-transparent text-center w-full"></div>
-          <div class="p-3 bg-slate-50 border rounded-xl"><span class="block text-xs text-slate-500">Enfants</span><input type="number" value="${sec.statsData.enfants || 0}" oninput="updateStatCount('${sec.id}', 'enfants', this.value)" class="text-2xl font-black text-rose-700 bg-transparent text-center w-full"></div>
-        </div>
-      `;
-      container.appendChild(card);
-      renderStandardTaskModule(container, sec);
-    }
-
-    function updateStatCount(secId, key, val) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec.statsData) sec.statsData = {};
-      sec.statsData[key] = parseInt(val) || 0;
-      saveData();
-    }
-
-    // VOICI LA FONCTION RENDU CORRIGÉE QUI AFFICHE TOUTES LES TÂCHES SANS ERREUR SILENCIEUSE
-    function renderStandardTaskModule(container, sec) {
-      const tasksArr = Array.isArray(sec.tasks) ? sec.tasks : (sec.tasks ? Object.values(sec.tasks) : []);
       
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4';
+      const tasks = sec.tasks || [];
       card.innerHTML = `
-        <div class="flex justify-between items-center border-b pb-3">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-list-check text-emerald-600"></i> Liste des Tâches & Actions (${tasksArr.length})
-          </h3>
-          <button onclick="addNewTaskPrompt('${sec.id}')" class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium px-2 py-1 rounded border border-emerald-200">
-            + Ajouter
-          </button>
+        <div class="border-b pb-3 font-bold text-sm">
+          Liste des Tâches (${tasks.length})
         </div>
-        <div id="tasks-list-container" class="space-y-2"></div>
+        <div id="tasks-container" class="space-y-2"></div>
       `;
       container.appendChild(card);
 
-      const listContainer = card.querySelector('#tasks-list-container');
-      if (tasksArr.length === 0) {
-        listContainer.innerHTML = `<p class="text-xs text-slate-400 italic py-2">Aucune tâche enregistrée pour le moment.</p>`;
+      const tasksContainer = card.querySelector('#tasks-container');
+
+      if (tasks.length === 0) {
+        tasksContainer.innerHTML = `<p class="text-xs text-slate-400 italic">Aucune tâche.</p>`;
         return;
       }
 
-      tasksArr.forEach((task) => {
+      tasks.forEach(task => {
         const item = document.createElement('div');
-        item.className = 'p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs hover:border-slate-300 transition';
-        const statusColors = {
-          'À faire': 'bg-slate-200 text-slate-700',
-          'En cours': 'bg-amber-100 text-amber-800 border-amber-300',
-          'Validé': 'bg-emerald-100 text-emerald-800 border-emerald-300'
-        };
-
-        const currentStatus = task.status || 'À faire';
-
+        item.className = 'p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs';
         item.innerHTML = `
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <input type="text" value="${task.name || ''}" oninput="updateTask('${sec.id}', '${task.id}', 'name', this.value)" class="font-bold text-slate-900 bg-transparent flex-1 border-b border-transparent focus:border-emerald-500 focus:bg-white rounded px-1">
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-              <select onchange="updateTask('${sec.id}', '${task.id}', 'status', this.value)" class="text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusColors[currentStatus] || 'bg-slate-100'}">
-                <option value="À faire" ${currentStatus === 'À faire' ? 'selected' : ''}>À faire</option>
-                <option value="En cours" ${currentStatus === 'En cours' ? 'selected' : ''}>En cours</option>
-                <option value="Validé" ${currentStatus === 'Validé' ? 'selected' : ''}>Validé</option>
-              </select>
-              <button onclick="deleteTask('${sec.id}', '${task.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-slate-500">
-            <div class="flex items-center gap-1">
-              <i class="fa-solid fa-user text-slate-400 text-[10px]"></i>
-              <select onchange="updateTask('${sec.id}', '${task.id}', 'resp', this.value)" class="bg-white border rounded p-1 w-full text-slate-700">
-                ${getContactOptionsHtml(task.resp)}
-              </select>
-            </div>
-            <div class="flex items-center gap-1">
-              <i class="fa-solid fa-calendar text-slate-400 text-[10px]"></i>
-              <input type="date" value="${task.date || ''}" onchange="updateTask('${sec.id}', '${task.id}', 'date', this.value)" class="bg-white border rounded p-1 w-full text-slate-700">
-            </div>
-            <div class="flex items-center gap-1">
-              <i class="fa-solid fa-comment text-slate-400 text-[10px]"></i>
-              <input type="text" value="${task.notes || ''}" placeholder="Notes..." oninput="updateTask('${sec.id}', '${task.id}', 'notes', this.value)" class="bg-white border rounded p-1 w-full text-slate-700">
-            </div>
-          </div>
+          <input type="text" value="${task.name}" onchange="updateTaskName('${sec.id}', '${task.id}', this.value)" class="font-semibold bg-transparent border-b border-transparent focus:bg-white focus:border-slate-300 px-1 flex-1 mr-2">
+          <button onclick="deleteTask('${sec.id}', '${task.id}')" class="text-slate-400 hover:text-rose-600">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
         `;
-        listContainer.appendChild(item);
+        tasksContainer.appendChild(item);
       });
     }
 
-    function addNewTaskPrompt(secId) {
+    function addNewTask(secId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
-      if (!sec.tasks) sec.tasks = [];
-      if (!Array.isArray(sec.tasks)) sec.tasks = Object.values(sec.tasks);
       
-      sec.tasks.push({
+      const newTask = {
         id: 'k_' + Date.now(),
-        name: "Nouvelle tâche à réaliser",
+        name: "Nouvelle tâche",
         resp: "",
-        date: new Date().toISOString().split('T')[0],
+        date: "",
         status: "À faire",
         notes: ""
-      });
+      };
+
+      sec.tasks.push(newTask);
       saveData();
       renderActiveSection();
     }
 
-    function updateTask(secId, taskId, field, val) {
+    function updateTaskName(secId, taskId, newName) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
-      const tasksArr = Array.isArray(sec.tasks) ? sec.tasks : Object.values(sec.tasks || {});
-      const task = tasksArr.find(t => t.id === taskId);
+      const task = sec.tasks.find(t => t.id === taskId);
       if (task) {
-        task[field] = val;
+        task.name = newName;
         saveData();
       }
     }
@@ -1125,265 +307,26 @@
     function deleteTask(secId, taskId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
-      const tasksArr = Array.isArray(sec.tasks) ? sec.tasks : Object.values(sec.tasks || {});
-      sec.tasks = tasksArr.filter(t => t.id !== taskId);
+      sec.tasks = sec.tasks.filter(t => t.id !== taskId);
       saveData();
       renderActiveSection();
-    }
-
-    function getContactOptionsHtml(selectedId) {
-      let html = `<option value="">-- Non assigné --</option>`;
-      const contactsArr = Array.isArray(appData.contacts) ? appData.contacts : (appData.contacts ? Object.values(appData.contacts) : []);
-      contactsArr.forEach(c => {
-        html += `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name} (${c.role})</option>`;
-      });
-      return html;
-    }
-
-    function renderSectionAttachments(container, sec) {
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mt-6 space-y-4';
-      card.innerHTML = `
-        <div class="flex justify-between items-center border-b pb-3">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-paperclip text-emerald-600"></i> Documents & Pièces Jointes
-          </h3>
-          <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg border cursor-pointer">
-            + Uploader Document
-            <input type="file" onchange="handleFileUpload(event, '${sec.id}')" class="hidden">
-          </label>
-        </div>
-        <div id="section-files-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
-      `;
-      container.appendChild(card);
-
-      const filesContainer = card.querySelector('#section-files-list');
-      const filesArr = Array.isArray(sec.files) ? sec.files : (sec.files ? Object.values(sec.files) : []);
-      if (filesArr.length === 0) {
-        filesContainer.innerHTML = `<p class="text-xs text-slate-400 italic col-span-full">Aucun document attaché.</p>`;
-        return;
-      }
-
-      filesArr.forEach((f, idx) => {
-        const item = document.createElement('div');
-        item.className = 'p-3 bg-slate-50 border border-slate-200 hover:border-emerald-500 transition rounded-xl flex items-center justify-between text-xs group';
-        const fileIcon = f.type && f.type.includes('image') ? 'fa-file-image text-indigo-500' : 'fa-file-pdf text-rose-500';
-        const hasUrl = Boolean(f.dataUrl);
-
-        item.innerHTML = `
-          <div class="flex items-center space-x-2 overflow-hidden flex-1 cursor-pointer" onclick="openAttachedFile('${sec.id}', ${idx})">
-            <i class="fa-solid ${fileIcon} text-lg shrink-0"></i>
-            <div class="truncate">
-              <span class="font-semibold text-slate-800 block truncate group-hover:text-emerald-600 ${hasUrl ? 'underline decoration-dotted' : ''}">${f.name}</span>
-              <span class="text-[10px] text-slate-400">${f.size || 'Fichier'} ${hasUrl ? '• Ouvrir' : ''}</span>
-            </div>
-          </div>
-          <button onclick="event.stopPropagation(); deleteFile('${sec.id}', ${idx})" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash-can"></i></button>
-        `;
-        filesContainer.appendChild(item);
-      });
-    }
-
-    function handleFileUpload(e, secId) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const sec = appData.sections.find(s => s.id === secId);
-        if (!sec.files) sec.files = [];
-        if (!Array.isArray(sec.files)) sec.files = Object.values(sec.files);
-        sec.files.push({ name: file.name, size: (file.size / 1024).toFixed(1) + ' KB', type: file.type, dataUrl: evt.target.result });
-        saveData();
-        renderActiveSection();
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function openAttachedFile(secId, idx) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec || !sec.files) return;
-      const filesArr = Array.isArray(sec.files) ? sec.files : Object.values(sec.files);
-      const file = filesArr[idx];
-      if (file && file.dataUrl) {
-        const win = window.open();
-        if (win) {
-          win.document.write(`<iframe src="${file.dataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-        } else {
-          const a = document.createElement('a');
-          a.href = file.dataUrl;
-          a.download = file.name;
-          a.click();
-        }
-      }
-    }
-
-    function deleteFile(secId, idx) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec || !sec.files) return;
-      const filesArr = Array.isArray(sec.files) ? sec.files : Object.values(sec.files);
-      filesArr.splice(idx, 1);
-      sec.files = filesArr;
-      saveData();
-      renderActiveSection();
-    }
-
-    function openConfigModal() {
-      document.getElementById('cfg-title').value = appData.config.title || '';
-      document.getElementById('cfg-date').value = appData.config.date || '';
-      document.getElementById('cfg-location').value = appData.config.location || '';
-      document.getElementById('cfg-formats').value = Array.isArray(appData.config.formats) ? appData.config.formats.join(', ') : appData.config.formats;
-      document.getElementById('cfg-gmaps').value = appData.config.gmapsUrl || '';
-      document.getElementById('config-modal').classList.remove('hidden');
-    }
-    function closeConfigModal() { document.getElementById('config-modal').classList.add('hidden'); }
-    function saveConfigModal() {
-      appData.config.title = document.getElementById('cfg-title').value;
-      appData.config.date = document.getElementById('cfg-date').value;
-      appData.config.location = document.getElementById('cfg-location').value;
-      appData.config.formats = document.getElementById('cfg-formats').value.split(',').map(s => s.trim());
-      appData.config.gmapsUrl = document.getElementById('cfg-gmaps').value;
-      saveData();
-      renderHeader();
-      closeConfigModal();
-    }
-
-    function openWebmasterModal() {
-      populateAITargetDropdown();
-      document.getElementById('webmaster-modal').classList.remove('hidden');
-    }
-    function closeWebmasterModal() { document.getElementById('webmaster-modal').classList.add('hidden'); }
-
-    function openDeleteModal(secId) {
-      if (appData.sections.length <= 1) return;
-      pendingDeleteSecId = secId;
-      const sec = appData.sections.find(s => s.id === secId);
-      document.getElementById('delete-modal-msg').innerText = sec ? `Voulez-vous supprimer "${sec.title}" ?` : "Supprimer ?";
-      document.getElementById('confirm-delete-btn').onclick = function() {
-        executeDeleteSection(pendingDeleteSecId);
-        closeDeleteModal();
-      };
-      document.getElementById('delete-modal').classList.remove('hidden');
-    }
-
-    function closeDeleteModal() {
-      pendingDeleteSecId = null;
-      document.getElementById('delete-modal').classList.add('hidden');
-    }
-
-    function executeDeleteSection(secId) {
-      appData.sections = appData.sections.filter(s => s.id !== secId);
-      if (activeSectionId === secId && appData.sections.length > 0) activeSectionId = appData.sections[0].id;
-      saveData();
-      renderSidebar();
-      renderActiveSection();
-      populateAITargetDropdown();
-    }
-
-    function populateAITargetDropdown() {
-      const select = document.getElementById('ai-target-section');
-      select.innerHTML = `<option value="NEW">Créer dans une NOUVELLE section</option>`;
-      if (appData && appData.sections) {
-        appData.sections.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.title}</option>`; });
-      }
-    }
-
-    function addCustomSectionFromWebmaster() {
-      const title = document.getElementById('new-section-title').value.trim();
-      if (!title) return;
-      const id = 'sec_' + Date.now();
-      appData.sections.push({ id, title, icon: "fa-folder-plus", type: "standard", tasks: [], files: [] });
-      saveData();
-      renderSidebar();
-      document.getElementById('new-section-title').value = '';
-      closeWebmasterModal();
     }
 
     function addNewCustomSectionPrompt() {
-      const title = prompt("Nom de la nouvelle section :");
-      if (title && title.trim() !== '') {
-        const id = 'sec_' + Date.now();
-        appData.sections.push({ id, title: title.trim(), icon: "fa-folder-plus", type: "standard", tasks: [], files: [] });
+      const title = prompt("Nom de la section :");
+      if (title) {
+        appData.sections.push({
+          id: 'sec_' + Date.now(),
+          title: title,
+          type: "standard",
+          tasks: []
+        });
         saveData();
         renderSidebar();
       }
     }
 
-    function generateAIWidget() {
-      const promptText = document.getElementById('ai-prompt-input').value.trim();
-      const targetSecVal = document.getElementById('ai-target-section').value;
-      if (!promptText) return;
-
-      let secId = targetSecVal;
-      if (targetSecVal === "NEW") {
-        secId = 'sec_' + Date.now();
-        appData.sections.push({
-          id: secId,
-          title: "Module IA: " + promptText.substring(0, 20) + "...",
-          icon: "fa-wand-magic-sparkles",
-          type: "standard",
-          tasks: [{ id: 'k_ai1', name: "Action IA: " + promptText, resp: "", date: "", status: "À faire", notes: "" }],
-          files: []
-        });
-      } else {
-        const targetSec = appData.sections.find(s => s.id === secId);
-        if (targetSec) {
-          if (!targetSec.tasks) targetSec.tasks = [];
-          if (!Array.isArray(targetSec.tasks)) targetSec.tasks = Object.values(targetSec.tasks);
-          targetSec.tasks.push({ id: 'k_ai_' + Date.now(), name: "Action IA: " + promptText, resp: "", date: "", status: "À faire", notes: "" });
-        }
-      }
-
-      saveData();
-      renderSidebar();
-      activeSectionId = secId;
-      renderActiveSection();
-      closeWebmasterModal();
-      document.getElementById('ai-prompt-input').value = '';
-    }
-
-    function exportJSONData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `Organisation_${(appData.config.title || 'Course').replace(/\s+/g, '_')}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-
-    function importJSONData(event) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const imported = JSON.parse(e.target.result);
-          if (imported && imported.config && Array.isArray(imported.sections)) {
-            appData = imported;
-            saveData();
-            renderHeader();
-            renderSidebar();
-            if (appData.sections.length > 0) activeSectionId = appData.sections[0].id;
-            renderActiveSection();
-            alert("Données importées avec succès !");
-          }
-        } catch (err) {}
-      };
-      if (event.target.files[0]) reader.readAsText(event.target.files[0]);
-    }
-
-    function handleGlobalSearch(query) {
-      const q = query.toLowerCase().trim();
-      if (!q) return;
-      for (const sec of appData.sections) {
-        const tasksArr = Array.isArray(sec.tasks) ? sec.tasks : (sec.tasks ? Object.values(sec.tasks) : []);
-        const match = tasksArr.find(t => (t.name && t.name.toLowerCase().includes(q)) || (t.notes && t.notes.toLowerCase().includes(q)));
-        if (match) {
-          activeSectionId = sec.id;
-          renderSidebar();
-          renderActiveSection();
-          break;
-        }
-      }
-    }
+    window.onload = initAppData;
   </script>
 </body>
 </html>
