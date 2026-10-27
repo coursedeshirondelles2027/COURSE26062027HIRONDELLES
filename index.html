@@ -486,11 +486,18 @@
         const data = snapshot.val();
         if (data) {
           appData = data;
+          // Conversion automatique si les sections sont stockées sous forme d'objet par Firebase
+          if (appData.sections && !Array.isArray(appData.sections)) {
+            appData.sections = Object.values(appData.sections);
+          }
+          if (appData.contacts && !Array.isArray(appData.contacts)) {
+            appData.contacts = Object.values(appData.contacts);
+          }
         } else {
           appData = JSON.parse(JSON.stringify(defaultData));
           eventRef.set(appData);
         }
-        if (!activeSectionId && appData.sections.length > 0) {
+        if (!activeSectionId && appData.sections && appData.sections.length > 0) {
           activeSectionId = appData.sections[0].id;
         }
         renderHeader();
@@ -536,6 +543,7 @@
     function renderSidebar() {
       const container = document.getElementById('sidebar-sections-list');
       container.innerHTML = '';
+      if (!appData.sections) return;
       const canDelete = appData.sections.length > 1;
 
       appData.sections.forEach((sec, index) => {
@@ -618,6 +626,7 @@
 
     function renderActiveSection() {
       const container = document.getElementById('main-content-viewport');
+      if (!appData.sections) return;
       const sec = appData.sections.find(s => s.id === activeSectionId);
       if (!sec) return;
 
@@ -706,7 +715,8 @@
       container.appendChild(wrapper);
 
       const itemsContainer = timelineCol.querySelector('#agenda-timeline-items');
-      (sec.timeline || []).forEach((item) => {
+      const timelineArr = Array.isArray(sec.timeline) ? sec.timeline : (sec.timeline ? Object.values(sec.timeline) : []);
+      timelineArr.forEach((item) => {
         const row = document.createElement('div');
         row.className = 'flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-emerald-300 transition text-xs';
         row.innerHTML = `
@@ -722,7 +732,8 @@
       });
 
       const notesContainer = notesCol.querySelector('#agenda-sticky-notes');
-      (sec.stickyNotes || []).forEach(note => {
+      const notesArr = Array.isArray(sec.stickyNotes) ? sec.stickyNotes : (sec.stickyNotes ? Object.values(sec.stickyNotes) : []);
+      notesArr.forEach(note => {
         const card = document.createElement('div');
         card.className = 'p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1.5 relative group';
         card.innerHTML = `
@@ -737,36 +748,42 @@
     function addAgendaSlot(secId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec.timeline) sec.timeline = [];
+      if (!Array.isArray(sec.timeline)) sec.timeline = Object.values(sec.timeline);
       sec.timeline.push({ id: 't_' + Date.now(), time: "10:00", activity: "Nouvel événement", location: "Zone Départ", resp: "", status: "Confirmé" });
       saveData();
       renderActiveSection();
     }
     function updateAgendaItem(secId, itemId, field, val) {
       const sec = appData.sections.find(s => s.id === secId);
-      const item = sec.timeline.find(t => t.id === itemId);
+      const timelineArr = Array.isArray(sec.timeline) ? sec.timeline : Object.values(sec.timeline || {});
+      const item = timelineArr.find(t => t.id === itemId);
       if (item) { item[field] = val; saveData(); }
     }
     function deleteAgendaItem(secId, itemId) {
       const sec = appData.sections.find(s => s.id === secId);
-      sec.timeline = sec.timeline.filter(t => t.id !== itemId);
+      const timelineArr = Array.isArray(sec.timeline) ? sec.timeline : Object.values(sec.timeline || {});
+      sec.timeline = timelineArr.filter(t => t.id !== itemId);
       saveData();
       renderActiveSection();
     }
     function addStickyNote(secId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec.stickyNotes) sec.stickyNotes = [];
+      if (!Array.isArray(sec.stickyNotes)) sec.stickyNotes = Object.values(sec.stickyNotes);
       sec.stickyNotes.push({ id: 'sn_' + Date.now(), title: "Note", content: "Détails..." });
       saveData();
       renderActiveSection();
     }
     function updateStickyNote(secId, noteId, field, val) {
       const sec = appData.sections.find(s => s.id === secId);
-      const note = sec.stickyNotes.find(n => n.id === noteId);
+      const notesArr = Array.isArray(sec.stickyNotes) ? sec.stickyNotes : Object.values(sec.stickyNotes || {});
+      const note = notesArr.find(n => n.id === noteId);
       if (note) { note[field] = val; saveData(); }
     }
     function deleteStickyNote(secId, noteId) {
       const sec = appData.sections.find(s => s.id === secId);
-      sec.stickyNotes = sec.stickyNotes.filter(n => n.id !== noteId);
+      const notesArr = Array.isArray(sec.stickyNotes) ? sec.stickyNotes : Object.values(sec.stickyNotes || {});
+      sec.stickyNotes = notesArr.filter(n => n.id !== noteId);
       saveData();
       renderActiveSection();
     }
@@ -867,7 +884,6 @@
             "🛰️ Satellite (Esri)": esriSatellite
           }, null, { position: 'topright' }).addTo(leafletMap);
 
-          // Force le redimensionnement et le rafraîchissement d'affichage de la div
           leafletMap.invalidateSize();
 
           if (sec.gpxTrack) displayParsedGPX(sec.gpxTrack);
@@ -946,7 +962,8 @@
       container.appendChild(card);
 
       const tbody = card.querySelector('#contacts-table-body');
-      appData.contacts.forEach(c => {
+      const contactsArr = Array.isArray(appData.contacts) ? appData.contacts : (appData.contacts ? Object.values(appData.contacts) : []);
+      contactsArr.forEach(c => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50/80 transition';
         tr.innerHTML = `
@@ -965,16 +982,20 @@
     }
 
     function addContactPrompt() {
+      if (!appData.contacts) appData.contacts = [];
+      if (!Array.isArray(appData.contacts)) appData.contacts = Object.values(appData.contacts);
       appData.contacts.push({ id: 'c_' + Date.now(), name: "Nouveau Contact", role: "Bénévole", phone: "", email: "", org: "Club", notes: "" });
       saveData();
       renderActiveSection();
     }
     function updateContact(id, field, val) {
-      const c = appData.contacts.find(x => x.id === id);
+      const contactsArr = Array.isArray(appData.contacts) ? appData.contacts : Object.values(appData.contacts || {});
+      const c = contactsArr.find(x => x.id === id);
       if (c) { c[field] = val; saveData(); }
     }
     function deleteContact(id) {
-      appData.contacts = appData.contacts.filter(x => x.id !== id);
+      const contactsArr = Array.isArray(appData.contacts) ? appData.contacts : Object.values(appData.contacts || {});
+      appData.contacts = contactsArr.filter(x => x.id !== id);
       saveData();
       renderActiveSection();
     }
@@ -1003,13 +1024,16 @@
       saveData();
     }
 
+    // VOICI LA FONCTION RENDU CORRIGÉE QUI AFFICHE TOUTES LES TÂCHES SANS ERREUR SILENCIEUSE
     function renderStandardTaskModule(container, sec) {
+      const tasksArr = Array.isArray(sec.tasks) ? sec.tasks : (sec.tasks ? Object.values(sec.tasks) : []);
+      
       const card = document.createElement('div');
       card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4';
       card.innerHTML = `
         <div class="flex justify-between items-center border-b pb-3">
           <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-list-check text-emerald-600"></i> Liste des Tâches & Actions (${sec.tasks ? sec.tasks.length : 0})
+            <i class="fa-solid fa-list-check text-emerald-600"></i> Liste des Tâches & Actions (${tasksArr.length})
           </h3>
           <button onclick="addNewTaskPrompt('${sec.id}')" class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium px-2 py-1 rounded border border-emerald-200">
             + Ajouter
@@ -1020,12 +1044,12 @@
       container.appendChild(card);
 
       const listContainer = card.querySelector('#tasks-list-container');
-      if (!sec.tasks || sec.tasks.length === 0) {
+      if (tasksArr.length === 0) {
         listContainer.innerHTML = `<p class="text-xs text-slate-400 italic py-2">Aucune tâche enregistrée pour le moment.</p>`;
         return;
       }
 
-      sec.tasks.forEach((task) => {
+      tasksArr.forEach((task) => {
         const item = document.createElement('div');
         item.className = 'p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs hover:border-slate-300 transition';
         const statusColors = {
@@ -1034,14 +1058,16 @@
           'Validé': 'bg-emerald-100 text-emerald-800 border-emerald-300'
         };
 
+        const currentStatus = task.status || 'À faire';
+
         item.innerHTML = `
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <input type="text" value="${task.name || ''}" oninput="updateTask('${sec.id}', '${task.id}', 'name', this.value)" class="font-bold text-slate-900 bg-transparent flex-1 border-b border-transparent focus:border-emerald-500 focus:bg-white rounded px-1">
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-              <select onchange="updateTask('${sec.id}', '${task.id}', 'status', this.value)" class="text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusColors[task.status] || 'bg-slate-100'}">
-                <option value="À faire" ${task.status === 'À faire' ? 'selected' : ''}>À faire</option>
-                <option value="En cours" ${task.status === 'En cours' ? 'selected' : ''}>En cours</option>
-                <option value="Validé" ${task.status === 'Validé' ? 'selected' : ''}>Validé</option>
+              <select onchange="updateTask('${sec.id}', '${task.id}', 'status', this.value)" class="text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusColors[currentStatus] || 'bg-slate-100'}">
+                <option value="À faire" ${currentStatus === 'À faire' ? 'selected' : ''}>À faire</option>
+                <option value="En cours" ${currentStatus === 'En cours' ? 'selected' : ''}>En cours</option>
+                <option value="Validé" ${currentStatus === 'Validé' ? 'selected' : ''}>Validé</option>
               </select>
               <button onclick="deleteTask('${sec.id}', '${task.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
             </div>
@@ -1069,26 +1095,46 @@
 
     function addNewTaskPrompt(secId) {
       const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
       if (!sec.tasks) sec.tasks = [];
-      sec.tasks.push({ id: 'k_' + Date.now(), name: "Nouvelle tâche", resp: "", date: new Date().toISOString().split('T')[0], status: "À faire", notes: "" });
+      if (!Array.isArray(sec.tasks)) sec.tasks = Object.values(sec.tasks);
+      
+      sec.tasks.push({
+        id: 'k_' + Date.now(),
+        name: "Nouvelle tâche à réaliser",
+        resp: "",
+        date: new Date().toISOString().split('T')[0],
+        status: "À faire",
+        notes: ""
+      });
       saveData();
       renderActiveSection();
     }
+
     function updateTask(secId, taskId, field, val) {
       const sec = appData.sections.find(s => s.id === secId);
-      const task = sec.tasks.find(t => t.id === taskId);
-      if (task) { task[field] = val; saveData(); }
+      if (!sec) return;
+      const tasksArr = Array.isArray(sec.tasks) ? sec.tasks : Object.values(sec.tasks || {});
+      const task = tasksArr.find(t => t.id === taskId);
+      if (task) {
+        task[field] = val;
+        saveData();
+      }
     }
+
     function deleteTask(secId, taskId) {
       const sec = appData.sections.find(s => s.id === secId);
-      sec.tasks = sec.tasks.filter(t => t.id !== taskId);
+      if (!sec) return;
+      const tasksArr = Array.isArray(sec.tasks) ? sec.tasks : Object.values(sec.tasks || {});
+      sec.tasks = tasksArr.filter(t => t.id !== taskId);
       saveData();
       renderActiveSection();
     }
 
     function getContactOptionsHtml(selectedId) {
       let html = `<option value="">-- Non assigné --</option>`;
-      appData.contacts.forEach(c => {
+      const contactsArr = Array.isArray(appData.contacts) ? appData.contacts : (appData.contacts ? Object.values(appData.contacts) : []);
+      contactsArr.forEach(c => {
         html += `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name} (${c.role})</option>`;
       });
       return html;
@@ -1112,12 +1158,13 @@
       container.appendChild(card);
 
       const filesContainer = card.querySelector('#section-files-list');
-      if (!sec.files || sec.files.length === 0) {
+      const filesArr = Array.isArray(sec.files) ? sec.files : (sec.files ? Object.values(sec.files) : []);
+      if (filesArr.length === 0) {
         filesContainer.innerHTML = `<p class="text-xs text-slate-400 italic col-span-full">Aucun document attaché.</p>`;
         return;
       }
 
-      sec.files.forEach((f, idx) => {
+      filesArr.forEach((f, idx) => {
         const item = document.createElement('div');
         item.className = 'p-3 bg-slate-50 border border-slate-200 hover:border-emerald-500 transition rounded-xl flex items-center justify-between text-xs group';
         const fileIcon = f.type && f.type.includes('image') ? 'fa-file-image text-indigo-500' : 'fa-file-pdf text-rose-500';
@@ -1144,6 +1191,7 @@
       reader.onload = function(evt) {
         const sec = appData.sections.find(s => s.id === secId);
         if (!sec.files) sec.files = [];
+        if (!Array.isArray(sec.files)) sec.files = Object.values(sec.files);
         sec.files.push({ name: file.name, size: (file.size / 1024).toFixed(1) + ' KB', type: file.type, dataUrl: evt.target.result });
         saveData();
         renderActiveSection();
@@ -1153,9 +1201,10 @@
 
     function openAttachedFile(secId, idx) {
       const sec = appData.sections.find(s => s.id === secId);
-      if (!sec || !sec.files || !sec.files[idx]) return;
-      const file = sec.files[idx];
-      if (file.dataUrl) {
+      if (!sec || !sec.files) return;
+      const filesArr = Array.isArray(sec.files) ? sec.files : Object.values(sec.files);
+      const file = filesArr[idx];
+      if (file && file.dataUrl) {
         const win = window.open();
         if (win) {
           win.document.write(`<iframe src="${file.dataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
@@ -1170,7 +1219,10 @@
 
     function deleteFile(secId, idx) {
       const sec = appData.sections.find(s => s.id === secId);
-      sec.files.splice(idx, 1);
+      if (!sec || !sec.files) return;
+      const filesArr = Array.isArray(sec.files) ? sec.files : Object.values(sec.files);
+      filesArr.splice(idx, 1);
+      sec.files = filesArr;
       saveData();
       renderActiveSection();
     }
@@ -1230,7 +1282,9 @@
     function populateAITargetDropdown() {
       const select = document.getElementById('ai-target-section');
       select.innerHTML = `<option value="NEW">Créer dans une NOUVELLE section</option>`;
-      appData.sections.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.title}</option>`; });
+      if (appData && appData.sections) {
+        appData.sections.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.title}</option>`; });
+      }
     }
 
     function addCustomSectionFromWebmaster() {
@@ -1274,6 +1328,7 @@
         const targetSec = appData.sections.find(s => s.id === secId);
         if (targetSec) {
           if (!targetSec.tasks) targetSec.tasks = [];
+          if (!Array.isArray(targetSec.tasks)) targetSec.tasks = Object.values(targetSec.tasks);
           targetSec.tasks.push({ id: 'k_ai_' + Date.now(), name: "Action IA: " + promptText, resp: "", date: "", status: "À faire", notes: "" });
         }
       }
@@ -1319,14 +1374,13 @@
       const q = query.toLowerCase().trim();
       if (!q) return;
       for (const sec of appData.sections) {
-        if (sec.tasks) {
-          const match = sec.tasks.find(t => (t.name && t.name.toLowerCase().includes(q)) || (t.notes && t.notes.toLowerCase().includes(q)));
-          if (match) {
-            activeSectionId = sec.id;
-            renderSidebar();
-            renderActiveSection();
-            break;
-          }
+        const tasksArr = Array.isArray(sec.tasks) ? sec.tasks : (sec.tasks ? Object.values(sec.tasks) : []);
+        const match = tasksArr.find(t => (t.name && t.name.toLowerCase().includes(q)) || (t.notes && t.notes.toLowerCase().includes(q)));
+        if (match) {
+          activeSectionId = sec.id;
+          renderSidebar();
+          renderActiveSection();
+          break;
         }
       }
     }
