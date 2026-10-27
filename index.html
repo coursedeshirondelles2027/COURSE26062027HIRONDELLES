@@ -847,11 +847,12 @@
       setTimeout(() => {
         try {
           if (leafletMap) { leafletMap.remove(); }
+          
           leafletMap = L.map('gpx-map').setView([43.4633, -1.4519], 13);
 
-          const osmStandard = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
+            attribution: '&copy; OpenStreetMap contributors'
           });
 
           const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -866,11 +867,14 @@
             "🛰️ Satellite (Esri)": esriSatellite
           }, null, { position: 'topright' }).addTo(leafletMap);
 
+          // Force le redimensionnement et le rafraîchissement d'affichage de la div
+          leafletMap.invalidateSize();
+
           if (sec.gpxTrack) displayParsedGPX(sec.gpxTrack);
         } catch(e) {
           console.error("Erreur carte:", e);
         }
-      }, 200);
+      }, 300);
     }
 
     function displayParsedGPX(gpxXmlText) {
@@ -882,6 +886,7 @@
         if (leafletPolyline) leafletMap.removeLayer(leafletPolyline);
         leafletPolyline = L.polyline(latLngs, { color: '#22c55e', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(leafletMap);
         leafletMap.fitBounds(leafletPolyline.getBounds(), { padding: [30, 30] });
+        leafletMap.invalidateSize();
       }
 
       const stats = calculateGPXStats(points);
