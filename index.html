@@ -134,7 +134,7 @@
           title: "8. Recherche de Lots & Sponsoring",
           icon: "fa-handshake",
           type: "standard",
-          sheets: [{ id: "sh_base", url: "https://docs.google.com/spreadsheets/d/19ApJAATjuMhG_IWp9Dj8Ugdq8-4F31lt4wy5wZjsVso/edit" }],
+          sheets: [{ id: "sh_base", url: "https://docs.google.com/spreadsheets/d/19ApJAATjuMhG_IWp9Dj8Ugdq8-4F31lt4wy5wZjsVso/edit", title: "Suivi des Dons et Sponsoring" }],
           tasks: [{ id: "k19", name: "Démarchage sponsors financiers", resp: "c2", date: "2027-03-01", status: "En cours", notes: "" }]
         },
         {
@@ -185,7 +185,7 @@
         // Migration de l'ancienne variable sheetUrl vers le tableau multi-sheets
         if (sec.sheetUrl) {
           if (!sec.sheets) sec.sheets = [];
-          sec.sheets.push({ id: 'sh_migrated_' + Date.now(), url: sec.sheetUrl });
+          sec.sheets.push({ id: 'sh_migrated_' + Date.now(), url: sec.sheetUrl, title: "Fichier Google Sheets" });
           delete sec.sheetUrl;
         }
 
@@ -194,6 +194,12 @@
         if (!sec.stickyNotes) sec.stickyNotes = []; else sec.stickyNotes = Object.values(sec.stickyNotes);
         if (!sec.timeline) sec.timeline = []; else sec.timeline = Object.values(sec.timeline);
         if (!sec.sheets) sec.sheets = []; else sec.sheets = Object.values(sec.sheets);
+        
+        // Sécuriser les titres des sheets existants
+        sec.sheets.forEach(sh => {
+          if (sh.title === undefined) sh.title = "Fichier Google Sheets";
+        });
+
         if (!sec.localContacts) sec.localContacts = []; else sec.localContacts = Object.values(sec.localContacts);
         if (!sec.images) sec.images = []; else sec.images = Object.values(sec.images);
         if (!sec.attachments) sec.attachments = []; else sec.attachments = Object.values(sec.attachments);
@@ -299,7 +305,7 @@
       `;
       container.appendChild(headerBox);
 
-      // --- RENDU DYNAMIQUE DES MODULES (Affichés seulement s'ils contiennent de la donnée ou par legacy) ---
+      // --- RENDU DYNAMIQUE DES MODULES ---
       
       // Legacy Map (Tracé)
       if (sec.type === 'trace_admin') renderMapModule(container, sec);
@@ -350,9 +356,19 @@
       if (!sec) return;
       const url = prompt("Collez l'URL complète de votre fichier Google Sheets (ex: https://docs.google.com/spreadsheets/d/.../edit) :");
       if (url && url.includes("http")) {
-        sec.sheets.push({ id: 'sh_' + Date.now(), url: url.trim() });
+        sec.sheets.push({ id: 'sh_' + Date.now(), url: url.trim(), title: "Fichier Google Sheets" });
         saveData();
         renderActiveSection();
+      }
+    }
+
+    function updateSheetTitle(secId, sheetId, newTitle) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
+      const sheet = sec.sheets.find(s => s.id === sheetId);
+      if (sheet) {
+        sheet.title = newTitle;
+        saveData();
       }
     }
 
@@ -371,10 +387,11 @@
         const iframeUrl = sheet.url.includes('?') ? sheet.url + '&rm=minimal' : sheet.url + '?rm=minimal';
 
         card.innerHTML = `
-          <div class="flex justify-between items-center border-b pb-3">
-            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <i class="fa-solid fa-table text-emerald-600"></i> Fichier Google Sheets
-            </h3>
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b pb-3">
+            <div class="flex-1 flex items-center gap-2">
+              <i class="fa-solid fa-table text-emerald-600"></i>
+              <input type="text" value="${sheet.title || ''}" placeholder="Titre du tableau (optionnel)..." onchange="updateSheetTitle('${sec.id}', '${sheet.id}', this.value)" class="font-bold text-slate-800 text-sm bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-slate-50 px-1 w-full sm:w-1/2 rounded transition">
+            </div>
             <div class="flex items-center gap-2">
               <a href="${sheet.url}" target="_blank" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border transition">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> Ouvrir
@@ -437,7 +454,7 @@
       card.innerHTML = `
         <div class="border-b pb-3 mb-4">
           <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-image text-blue-500"></i> Galerie d'Images de la Section
+            <i class="fa-solid fa-image text-blue-500"></i> Galerie d'Images
           </h3>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
