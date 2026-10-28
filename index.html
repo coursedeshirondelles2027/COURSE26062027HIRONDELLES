@@ -158,6 +158,7 @@
           title: "8. Recherche de Lots & Sponsoring",
           icon: "fa-handshake",
           type: "standard",
+          sheetUrl: "https://docs.google.com/spreadsheets/d/19ApJAATjuMhG_IWp9Dj8Ugdq8-4F31lt4wy5wZjsVso/edit",
           tasks: [
             { id: "k19", name: "Démarchage sponsors financiers", resp: "c2", date: "2027-03-01", status: "En cours", notes: "Lots vainqueurs" }
           ],
@@ -203,9 +204,13 @@
       if (!Array.isArray(data.sections)) data.sections = Object.values(data.sections);
 
       data.sections.forEach(sec => {
-        // Détecte automatiquement si la section contient le mot "Bénévole" ou "Contact" pour basculer en mode répertoire de contacts sans tâches
         if (sec.title && (sec.title.toLowerCase().includes('bénévole') || sec.title.toLowerCase().includes('contact'))) {
           sec.type = 'contacts';
+        }
+
+        // Intégration forcée du fichier Google Sheets pour la section 8 existante
+        if (sec.id === 'sec-8' && !sec.sheetUrl) {
+          sec.sheetUrl = "https://docs.google.com/spreadsheets/d/19ApJAATjuMhG_IWp9Dj8Ugdq8-4F31lt4wy5wZjsVso/edit";
         }
 
         if (!sec.tasks) sec.tasks = [];
@@ -302,12 +307,39 @@
         renderMapModule(container, sec);
         renderTasksList(container, sec);
       } else {
+        // Affiche le module Sheets si un lien est présent
+        if (sec.sheetUrl) {
+          renderSheetModule(container, sec);
+        }
         renderTasksList(container, sec);
       }
 
       if (sec.type !== 'agenda') {
         renderStickyNotesModule(container, sec);
       }
+    }
+
+    // --- NOUVEAU MODULE: GOOGLE SHEETS INTÉGRÉ ---
+    function renderSheetModule(container, sec) {
+      const card = document.createElement('div');
+      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
+      
+      const iframeUrl = sec.sheetUrl.includes('?') ? sec.sheetUrl + '&rm=minimal' : sec.sheetUrl + '?rm=minimal';
+
+      card.innerHTML = `
+        <div class="flex justify-between items-center border-b pb-3">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-table text-emerald-600"></i> Suivi des Dons & Sponsoring (Google Sheets)
+          </h3>
+          <a href="${sec.sheetUrl}" target="_blank" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> Plein écran
+          </a>
+        </div>
+        <div class="w-full h-[500px] border border-slate-200 rounded-xl overflow-hidden bg-slate-50 relative">
+          <iframe src="${iframeUrl}" class="w-full h-full border-none absolute inset-0"></iframe>
+        </div>
+      `;
+      container.appendChild(card);
     }
 
     // --- MODULE REPERTOIRE DES CONTACTS ---
@@ -770,7 +802,6 @@
     function addNewCustomSectionPrompt() {
       const title = prompt("Nom de la section :");
       if (title) {
-        // Détecte si la section créée par l'utilisateur doit être de type contact
         const isContactSec = title.toLowerCase().includes('bénévole') || title.toLowerCase().includes('contact');
         appData.sections.push({
           id: 'sec_' + Date.now(),
