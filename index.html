@@ -21,20 +21,24 @@
   <script>
     tailwind.config = {
       theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] }
-        }
+        extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } }
       }
     }
   </script>
   <style>
-    .draggable-item { cursor: grab; }
-    .draggable-item:active { cursor: grabbing; }
-    .drag-over { border: 2px dashed #6366f1 !important; background-color: #f0f3ff !important; }
-    .dragging { opacity: 0.4; }
     #gpx-map { height: 450px; width: 100%; border-radius: 0.75rem; z-index: 10; }
-    /* Cache l'outline par défaut sur les inputs de tableaux */
     input.cell-input:focus { outline: 2px solid #10b981; outline-offset: -2px; z-index: 10; position: relative; }
+    
+    /* Styles pour le drag & drop des modules */
+    .module-drag-handle { cursor: grab; }
+    .module-drag-handle:active { cursor: grabbing; }
+    .module-drag-over { border: 2px dashed #10b981 !important; background-color: #ecfdf5 !important; opacity: 0.8; }
+    .module-dragging { opacity: 0.4; transform: scale(0.98); }
+    
+    /* Masquer la scrollbar pour un design plus propre */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
   </style>
 </head>
 <body class="h-full font-sans text-slate-800 bg-slate-100 flex flex-col antialiased">
@@ -60,6 +64,10 @@
       </div>
 
       <div class="flex items-center flex-wrap gap-2">
+        <button onclick="openRecapModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
+          <i class="fa-solid fa-clipboard-user"></i> Récap. Missions
+        </button>
+
         <button onclick="saveData(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
           <i class="fa-solid fa-floppy-disk"></i> Enregistrer
         </button>
@@ -82,15 +90,31 @@
           <i class="fa-solid fa-plus text-[10px]"></i> Section
         </button>
       </div>
-
-      <nav id="sidebar-sections-list" class="flex-1 overflow-y-auto p-2 space-y-1">
-      </nav>
+      <nav id="sidebar-sections-list" class="flex-1 overflow-y-auto p-2 space-y-1"></nav>
     </aside>
 
-    <main class="flex-1 overflow-y-auto bg-slate-100 p-4 md:p-6" id="main-content-viewport">
-    </main>
-
+    <main class="flex-1 overflow-y-auto bg-slate-100 p-4 md:p-6" id="main-content-viewport"></main>
   </div>
+
+  <!-- MODAL RÉCAPITULATIF PAR CONTACT -->
+  <div id="recap-modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clipboard-user text-indigo-600"></i> Récapitulatif des Missions par Contact</h2>
+        <button onclick="closeRecapModal()" class="text-slate-400 hover:text-rose-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-5 border-b border-slate-200">
+        <label class="text-xs font-bold text-slate-500 block mb-1">Sélectionner un contact :</label>
+        <select id="recap-contact-select" onchange="updateRecapView()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:border-indigo-500 outline-none">
+          <!-- Rempli dynamiquement -->
+        </select>
+      </div>
+      <div id="recap-content-area" class="p-5 flex-1 overflow-y-auto space-y-4 bg-slate-100">
+        <div class="text-center text-slate-400 text-sm py-10 italic">Sélectionnez un contact pour voir ses missions.</div>
+      </div>
+    </div>
+  </div>
+
 
   <script>
     const firebaseConfig = {
@@ -101,50 +125,28 @@
     const db = firebase.database();
     const eventRef = db.ref('eventData');
 
+    // IMPORT AUTOMATIQUE DES 101 CONTACTS DU FICHIER CSV
+    const IMPORTED_CSV_CONTACTS = [{"name": "Alexandre Hirth", "email": "Alexandre.hirth@gmail.com", "phone": "0689863849"}, {"name": "Alexandre Le Riche", "email": "Alex.leriche649990@gmail.com", "phone": "0632240399"}, {"name": "Alexia Nascimento", "email": "Alexia64nasci@gmail.com", "phone": "0650952297"}, {"name": "Aline Mogaburu", "email": "Aline.mogaburu@hotmail.fr", "phone": "0680570156"}, {"name": "Amandine Frigot-Duviella", "email": "Am.duv@live.fr", "phone": "0630385339"}, {"name": "Amélie Blanc", "email": "Blancamelie64@gmail.com", "phone": "0683113640"}, {"name": "Angelique Mazzer", "email": "Mazzer64340@gmail.com", "phone": "0637377079"}, {"name": "Armelle Roncin", "email": "Armelle.roncin@live.fr", "phone": "0603391622"}, {"name": "Beñat Abeberry", "email": "Bernardabeberry@gmail.com", "phone": "0688352487"}, {"name": "Benoît Fournet", "email": "Benfournet@hotmail.fr", "phone": "0610015687"}, {"name": "Bertrand Pecastaing", "email": "B.pecastaing@hotmail.fr", "phone": "0665533209"}, {"name": "Brad Butryn", "email": "Butryn.brad@hotmail.com", "phone": "0766425844"}, {"name": "Camille Lamarque", "email": "Camillelamarque2595@gmail.com", "phone": "0677093984"}, {"name": "Carine Cohere", "email": "Carine.cohere@gmail.com", "phone": "0616890531"}, {"name": "Carole Longueira", "email": "Carole.longueira64@orange.fr", "phone": "0627257573"}, {"name": "Cecile Labat", "email": "Xexili1@hotmail.com", "phone": "0687708373"}, {"name": "Céline Noussitou", "email": "Celinenoussitou@gmail.com", "phone": "0688164980"}, {"name": "Chloé Leurgorry", "email": "Chloe.leurgorrypro@gmail.com", "phone": "0786830786"}, {"name": "Christelle Harismendy", "email": "Christelleharis@gmail.com", "phone": "0687956619"}, {"name": "Christine Fessard", "email": "Fessard_christine@yahoo.fr", "phone": "0688594657"}, {"name": "Christophe Ducournau", "email": "Cdn.au@pm.me", "phone": "0633173421"}, {"name": "Christophe Petit", "email": "Bdeco64@gmail.com", "phone": "0663697502"}, {"name": "Clara Gomez", "email": "Claragomez_40@hotmail.fr", "phone": "0764819766"}, {"name": "Clémentine Defente", "email": "Clementine.defente@gmail.com", "phone": "0619720683"}, {"name": "Cloe Perrochon", "email": "Cloe.perrochon@hotmail.fr", "phone": "0672270996"}, {"name": "Damien Delannoy", "email": "Damiendelannoy1@gmail.com", "phone": "0765757152"}, {"name": "David Hondarrague", "email": "Hondarraguedavid@gmail.com", "phone": "0661365930"}, {"name": "Delphine Sorondo", "email": "D.sorondo@icloud.com", "phone": "0689260368"}, {"name": "Elise Kéo Singharath", "email": "Ek4sing@hotmail.fr", "phone": "0664976671"}, {"name": "Elodie Chibrac", "email": "Elodie.hordiller@gmail.com", "phone": "0659315546"}, {"name": "Emilie Novion", "email": "Emilienovion@hotmail.com", "phone": "0674679548"}, {"name": "Fabienne Darrigol", "email": "Fabdarrigol@gmail.com", "phone": "0675962108"}, {"name": "Fabienne Guignard", "email": "Fabienneguignard@outlook.fr", "phone": "0674581289"}, {"name": "Fabrice Laplace", "email": "Jademarie72@hotmail.fr", "phone": "0659508260"}, {"name": "Florence Aguerre", "email": "Aguerreflo@hotmail.fr", "phone": "0630281974"}, {"name": "Florence Dufau", "email": "Floflobayonna@gmail.com", "phone": "0621912926"}, {"name": "Floriane Nascimento", "email": "Floriane.nascimento@hotmail.fr", "phone": "0664559226"}, {"name": "Frederic Hinx", "email": "Hfrederic40@gmail.com", "phone": "0767504323"}, {"name": "Gaelle Daum", "email": "Gaelle.daum@gmail.com", "phone": "0683545494"}, {"name": "Gaylord Janot", "email": "Gaylord.janot@sfr.fr", "phone": "0603058742"}, {"name": "Gérard Hamcha", "email": "Hamcha.gerard@orange.fr", "phone": "0630846242"}, {"name": "Grégory Gaillardet", "email": "Gaillard64@hotmail.com", "phone": "0689914632"}, {"name": "Isabelle Hervouët", "email": "Ipague@yahoo.fr", "phone": "0676744487"}, {"name": "Jean Louis Lespine", "email": "Jlespine64@gmail.com", "phone": "0662897238"}, {"name": "Jean-Marc Floureck", "email": "Floureck@hotmail.com", "phone": "0614645752"}, {"name": "Jerome Cresson", "email": "Etj@laposte.net", "phone": "0617390691"}, {"name": "Jérôme Mandin", "email": "Jm@syspro.fr", "phone": "06 30 10 42 28"}, {"name": "Jonathan Gonzalez", "email": "Jon1985@hotmail.fr", "phone": "0677767920"}, {"name": "Julie Bricard", "email": "Jubricard@hotmail.fr", "phone": "0626370559"}, {"name": "Julie Poublan", "email": "Julie.poublan@gmail.com", "phone": "0621502905"}, {"name": "Julien Paillard", "email": "Julienpaillard2507@gmail.com", "phone": "0767465345"}, {"name": "Katia Nascimento", "email": "Katia.nasci64@hotmail.com", "phone": "0650952505"}, {"name": "Laura Clochard", "email": "Clochard.laura79@gmail.com", "phone": "0677832382"}, {"name": "Laura Lafitte", "email": "Laura.lafitte40@gmail.com", "phone": "0646727485"}, {"name": "Laurent Berdou", "email": "Berdoulaurent@gmail.com", "phone": "0676480451"}, {"name": "Laurinda Gonçalves", "email": "Laurinda.goncalves917@dbmail.com", "phone": "0631632698"}, {"name": "Léa Lecouffe", "email": "Lecouffelea@orange.fr", "phone": "0648223217"}, {"name": "Louise Romero", "email": "Louise.romero@sfr.fr", "phone": "0615392085"}, {"name": "Lucie Heraud", "email": "Lucie.heraud@gmail.com", "phone": "0671233176"}, {"name": "Lucile Julienne", "email": "Julienne.lucile@orange.fr", "phone": "0683338724"}, {"name": "Maeva Grondard", "email": "Grondardmaeva@gmail.com", "phone": "0783319696"}, {"name": "Maialen Pessans", "email": "Mpessans@yahoo.fr", "phone": "0786555926"}, {"name": "Mailys Diribarne", "email": "Mailys.diribarne.sta@gmail.com", "phone": "0689375061"}, {"name": "Marc Duperthuis", "email": "Marc.duperthuis@gmail.com", "phone": "0612726173"}, {"name": "Marc Etcheverry", "email": "Macopec@hotmail.fr", "phone": "0673952300"}, {"name": "Marcel Leurgorry", "email": "Mgleurgorry@gmail.com", "phone": "0687011200"}, {"name": "Margaux Vicogne", "email": "Margauxvicogne4@gmail.com", "phone": "0646327868"}, {"name": "Marie Lorenzo", "email": "Marielorenzo64@yahoo.fr", "phone": "0688737257"}, {"name": "Marie Nougue", "email": "Marie_lauga@hotmail.com", "phone": "0676914438"}, {"name": "Marie Sanglar", "email": "Marie.picard64@gmail.com", "phone": "0618595049"}, {"name": "Marion Bernard", "email": "Marion-Bernard@hotmail.fr", "phone": "0681956363"}, {"name": "Marjorie Courtade", "email": "Courtademarjorie@yahoo.fr", "phone": "0786484185"}, {"name": "Matthieu Betachet", "email": "Matthieu.betachet@gmail.com", "phone": "0674314406"}, {"name": "Michele Fischer", "email": "Ma.fischer64@yahoo.com", "phone": "0661799511"}, {"name": "Mirentchu Biret", "email": "Toubalmirentchu@gmail.com", "phone": "0683328334"}, {"name": "Muriel Bordères", "email": "Mumu-64@hotmail.fr", "phone": "0689434636"}, {"name": "Nathalie Earnshaw", "email": "Natearnshaw@yahoo.fr", "phone": "0637697957"}, {"name": "Nelly Moreau", "email": "Nelmoreau@hotmail.com", "phone": "0676948319"}, {"name": "Nicolas De La Parra", "email": "Nicoccino@hotmail.fr", "phone": "0625763288"}, {"name": "Nicolas Gorostegui", "email": "Nicogoros64@gmail.com", "phone": "0614716644"}, {"name": "Ninon Brousse", "email": "Brousseninon@gmail.com", "phone": "0677416126"}, {"name": "Olivier Cassagne", "email": "Cassagneolivier@orange.fr", "phone": "0630252280"}, {"name": "Olivier Picard", "email": "Picardcorinne@bbox.fr", "phone": "0658876044"}, {"name": "Philippe Larrode", "email": "Larrodephilippe@gmail.com", "phone": "0622592933"}, {"name": "Prune Tagot", "email": "Tagot.prune@gmail.com", "phone": "0627725807"}, {"name": "Sandrine Pouy", "email": "Sand.pouy@neuf.fr", "phone": "0663200064"}, {"name": "Stephane Contacolli", "email": "Stephanecontacolli@gmail.com", "phone": "0695151516"}, {"name": "Stéphane Da Silva", "email": "Sda-Silva@sfr.fr", "phone": "0630239320"}, {"name": "Stéphanie Hargous", "email": "Diethargous@gmail.com", "phone": "0621370567"}, {"name": "Stéphanie Leonard", "email": "Mscj.leonard@gmail.com", "phone": "0685152486"}, {"name": "Thierry Hayet", "email": "Titi.hyt@sfr.fr", "phone": "0676117562"}, {"name": "Thierry Saurais", "email": "Thierry.saurais@orange.fr", "phone": "0671071268"}, {"name": "Thomas Bergerot", "email": "Thomasbergerot@free.fr", "phone": "0608886466"}, {"name": "Thomas Lalande", "email": "Thomaslalande40@icloud.com", "phone": "0638673940"}, {"name": "Thomas Poilvé", "email": "Thomas.poilve@gmail.com", "phone": "0667288343"}, {"name": "Vincent Capdeville", "email": "Vinct64@msn.com", "phone": "0643268308"}, {"name": "Vincent Romatet", "email": "Vincentab@hotmail.fr", "phone": "0630845342"}, {"name": "Wilfried Majerus", "email": "Wmajerus64@gmail.com", "phone": "0631848739"}, {"name": "Yannick Hervouet", "email": "Yanhervouet@yahoo.fr", "phone": "0632694735"}, {"name": "Yvan Carli", "email": "Carliyvan@gmail.com", "phone": "0786141500"}, {"name": "Yves Robert", "email": "Robertyves64@yahoo.com", "phone": "0625780686"}];
+
     const defaultData = {
       config: {
-        title: "Course des Hirondelles 2027",
-        date: "26 juin 2027",
-        location: "Saint-Pierre-d'Irube",
+        title: "Course des Hirondelles 2027", date: "26 juin 2027", location: "Saint-Pierre-d'Irube",
         formats: ["10 km Solo (2x5km)", "10 km Relais", "10 km Marche"],
       },
-      contacts: [
-        { id: "c1", name: "Jean-Louis", role: "Responsable Administratif / Mairie", phone: "", email: "", org: "Club Athlé", notes: "" },
-        { id: "c2", name: "Jérôme", role: "Référent Groupe Route", phone: "", email: "", org: "Ainarak", notes: "" }
-      ],
+      contacts: [],
       sections: [
         {
-          id: "sec-0",
-          title: "Planning Jour J (Agenda)",
-          icon: "fa-calendar-check",
-          type: "agenda",
-          timeline: [
-            { id: "t1", time: "06:30", activity: "Arrivée équipe logistique", location: "", resp: "c1", status: "Confirmé" }
-          ],
+          id: "sec-0", title: "Planning Jour J (Agenda)", icon: "fa-calendar-check", type: "agenda", layout: [],
+          timeline: [{ id: "t1", time: "06:30", activity: "Arrivée équipe logistique", location: "", resp: "", status: "Confirmé" }],
           stickyNotes: [{ id: "sn1", title: "Micro & Musique", content: "Sonorisation de 7h00 à 13h00." }]
         },
         {
-          id: "sec-1",
-          title: "1. Course & Tracé",
-          icon: "fa-map-location-dot",
-          type: "trace_admin",
-          gpxTrack: null,
-          tasks: [{ id: "k1", name: "Création du tracé", resp: "c1", date: "2027-02-15", status: "Validé", notes: "" }]
+          id: "sec-1", title: "1. Course & Tracé", icon: "fa-map-location-dot", type: "trace_admin", layout: [],
+          gpxTracks: [], myMapsUrl: "https://www.google.com/maps/d/embed?mid=VOTRE_ID_DE_CARTE",
+          tasks: [{ id: "k1", name: "Création du tracé", resp: "", date: "2027-02-15", status: "Validé", notes: "" }]
         },
         {
-          id: "sec-8",
-          title: "8. Recherche de Lots & Sponsoring",
-          icon: "fa-handshake",
-          type: "standard",
-          sheets: [{ id: "sh_base", url: "https://docs.google.com/spreadsheets/d/19ApJAATjuMhG_IWp9Dj8Ugdq8-4F31lt4wy5wZjsVso/edit", title: "Suivi des Dons et Sponsoring" }],
-          tasks: [{ id: "k19", name: "Démarchage sponsors financiers", resp: "c2", date: "2027-03-01", status: "En cours", notes: "" }]
-        },
-        {
-          id: "sec-contacts",
-          title: "Répertoire Global des Contacts",
-          icon: "fa-address-book",
-          type: "contacts",
-          stickyNotes: []
+          id: "sec-contacts", title: "Répertoire Global des Contacts", icon: "fa-address-book", type: "contacts", layout: [], stickyNotes: []
         }
       ]
     };
@@ -152,7 +154,10 @@
     let appData = null;
     let activeSectionId = null;
     let leafletMap = null;
-    let leafletPolyline = null;
+    let leafletPolylines = [];
+    
+    // GESTION DRAG & DROP DES MODULES
+    let draggedModuleId = null;
 
     function initAppData() {
       eventRef.on('value', (snapshot) => {
@@ -161,53 +166,63 @@
           appData = sanitizeData(data);
         } else {
           appData = defaultData;
+          autoImportCSVContacts(); // Import auto au premier lancement
           eventRef.set(appData);
         }
         
-        if (!activeSectionId && appData.sections.length > 0) {
-          activeSectionId = appData.sections[0].id;
-        }
+        if (!activeSectionId && appData.sections.length > 0) activeSectionId = appData.sections[0].id;
 
+        autoImportCSVContacts(); // Vérifie si de nouveaux contacts CSV sont absents
+        
         renderHeader();
         renderSidebar();
         renderActiveSection();
       });
     }
 
-    // Sécurisation et standardisation
+    function autoImportCSVContacts() {
+      let added = false;
+      if (!appData.contacts) appData.contacts = [];
+      IMPORTED_CSV_CONTACTS.forEach(c => {
+        const exists = appData.contacts.some(existing => 
+          (existing.email && existing.email.toLowerCase() === c.email.toLowerCase()) || 
+          (existing.name && existing.name.toLowerCase() === c.name.toLowerCase())
+        );
+        if (!exists) {
+          appData.contacts.push({
+            id: 'csv_' + Date.now() + Math.floor(Math.random()*10000),
+            name: c.name, role: "Import CSV", org: "", phone: c.phone, email: c.email, notes: "Issu de contacts (3).csv"
+          });
+          added = true;
+        }
+      });
+      if (added) saveData();
+    }
+
     function sanitizeData(data) {
       if (!data.sections) data.sections = [];
       if (!Array.isArray(data.sections)) data.sections = Object.values(data.sections);
 
       data.sections.forEach(sec => {
-        if (sec.title && (sec.title.toLowerCase().includes('bénévole') || sec.title.toLowerCase().includes('répertoire global'))) {
-          sec.type = 'contacts';
-        }
-
-        if (sec.sheetUrl) {
-          if (!sec.sheets) sec.sheets = [];
-          sec.sheets.push({ id: 'sh_migrated_' + Date.now(), url: sec.sheetUrl, title: "Ancien Fichier Google Sheets" });
-          delete sec.sheetUrl;
-        }
-
+        if (!sec.layout) sec.layout = [];
         if (!sec.tables) sec.tables = []; else sec.tables = Object.values(sec.tables);
         if (!sec.tasks) sec.tasks = []; else sec.tasks = Object.values(sec.tasks);
         if (!sec.stickyNotes) sec.stickyNotes = []; else sec.stickyNotes = Object.values(sec.stickyNotes);
         if (!sec.timeline) sec.timeline = []; else sec.timeline = Object.values(sec.timeline);
         if (!sec.sheets) sec.sheets = []; else sec.sheets = Object.values(sec.sheets);
-        
-        sec.sheets.forEach(sh => {
-          if (sh.title === undefined) sh.title = "Fichier Google Sheets";
-        });
-
         if (!sec.localContacts) sec.localContacts = []; else sec.localContacts = Object.values(sec.localContacts);
         if (!sec.images) sec.images = []; else sec.images = Object.values(sec.images);
         if (!sec.attachments) sec.attachments = []; else sec.attachments = Object.values(sec.attachments);
+        if (!sec.gpxTracks) {
+          sec.gpxTracks = [];
+          if (sec.gpxTrack) { sec.gpxTracks.push({id: 'gpx_legacy', name: 'Tracé principal', data: sec.gpxTrack}); delete sec.gpxTrack; }
+        } else {
+          sec.gpxTracks = Object.values(sec.gpxTracks);
+        }
       });
 
       if (!data.contacts) data.contacts = [];
       if (!Array.isArray(data.contacts)) data.contacts = Object.values(data.contacts);
-
       return data;
     }
 
@@ -236,18 +251,67 @@
         item.className = `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium cursor-pointer ${
           isActive ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'
         }`;
-        
-        item.onclick = () => {
-          activeSectionId = sec.id;
-          renderSidebar();
-          renderActiveSection();
-        };
-
+        item.onclick = () => { activeSectionId = sec.id; renderSidebar(); renderActiveSection(); };
         item.innerHTML = `<div class="flex items-center space-x-2"><i class="fa-solid ${sec.icon || 'fa-folder'} text-xs"></i><span>${sec.title}</span></div>`;
         container.appendChild(item);
       });
     }
 
+    // --- LOGIQUE DRAG & DROP DES MODULES (CARTES) ---
+    function handleModuleDragStart(e, moduleId) {
+      draggedModuleId = moduleId;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => e.target.classList.add('module-dragging'), 0);
+    }
+    function handleModuleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      e.currentTarget.classList.add('module-drag-over');
+    }
+    function handleModuleDragLeave(e) {
+      e.currentTarget.classList.remove('module-drag-over');
+    }
+    function handleModuleDrop(e, targetModuleId) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('module-drag-over');
+      if (!draggedModuleId || draggedModuleId === targetModuleId) return;
+
+      const sec = appData.sections.find(s => s.id === activeSectionId);
+      if (!sec) return;
+
+      const oldIndex = sec.layout.indexOf(draggedModuleId);
+      const newIndex = sec.layout.indexOf(targetModuleId);
+
+      if (oldIndex > -1 && newIndex > -1) {
+        sec.layout.splice(oldIndex, 1);
+        sec.layout.splice(newIndex, 0, draggedModuleId);
+        saveData();
+        renderActiveSection();
+      }
+    }
+    function handleModuleDragEnd(e) {
+      e.target.classList.remove('module-dragging');
+      draggedModuleId = null;
+    }
+
+    function wrapModuleDraggable(moduleId, contentHtml) {
+      return `
+        <div draggable="true" 
+             ondragstart="handleModuleDragStart(event, '${moduleId}')" 
+             ondragover="handleModuleDragOver(event)" 
+             ondragleave="handleModuleDragLeave(event)" 
+             ondrop="handleModuleDrop(event, '${moduleId}')" 
+             ondragend="handleModuleDragEnd(event)" 
+             class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 relative group transition-all">
+          <div class="absolute top-2 right-2 module-drag-handle text-slate-300 hover:text-emerald-500 p-1 bg-white rounded cursor-move" title="Glisser pour réorganiser">
+            <i class="fa-solid fa-grip"></i>
+          </div>
+          ${contentHtml}
+        </div>
+      `;
+    }
+
+    // --- RENDU DYNAMIQUE ORDONNÉ DE LA SECTION ---
     function renderActiveSection() {
       const container = document.getElementById('main-content-viewport');
       const sec = appData.sections.find(s => s.id === activeSectionId);
@@ -255,9 +319,9 @@
 
       container.innerHTML = '';
 
+      // En-tête (Fixe, non draggable)
       const headerBox = document.createElement('div');
       headerBox.className = 'bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col gap-4';
-      
       headerBox.innerHTML = `
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-bold text-slate-900 flex items-center gap-3">
@@ -269,620 +333,206 @@
         
         <!-- BARRE D'OUTILS D'AJOUT DE MODULES -->
         <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
-          <span class="text-[10px] font-bold uppercase text-slate-400 mr-2 tracking-wider"><i class="fa-solid fa-toolbox"></i> Ajouter au tableau :</span>
-          
-          <button onclick="addNewTask('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-            <i class="fa-solid fa-list-check"></i> Tâche
-          </button>
-          
-          <button onclick="addStickyNote('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-            <i class="fa-solid fa-note-sticky"></i> Note
-          </button>
-          
-          <button onclick="addLocalContact('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-            <i class="fa-solid fa-user-plus"></i> Contact
-          </button>
-
-          <button onclick="addNativeTable('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-            <i class="fa-solid fa-table"></i> Tableau Intégré
-          </button>
-
-          <label class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer">
-            <i class="fa-solid fa-image"></i> Image
-            <input type="file" accept="image/*" onchange="uploadImage(event, '${sec.id}')" class="hidden">
-          </label>
-
-          <label class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer">
-            <i class="fa-solid fa-paperclip"></i> Pièce Jointe
-            <input type="file" onchange="uploadAttachment(event, '${sec.id}')" class="hidden">
-          </label>
-
-          <button onclick="addAgendaSlot('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-            <i class="fa-solid fa-clock"></i> Planning
-          </button>
+          <span class="text-[10px] font-bold uppercase text-slate-400 mr-2 tracking-wider"><i class="fa-solid fa-toolbox"></i> Ajouter :</span>
+          <button onclick="addNewTask('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-list-check"></i> Tâche</button>
+          <button onclick="addStickyNote('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-note-sticky"></i> Note</button>
+          <button onclick="addLocalContact('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-user-plus"></i> Contact</button>
+          <button onclick="addNativeTable('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-green-50 hover:text-green-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-table"></i> Tableau Intégré</button>
+          <label class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-blue-50 hover:text-blue-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer"><i class="fa-solid fa-image"></i> Image<input type="file" accept="image/*" onchange="uploadImage(event, '${sec.id}')" class="hidden"></label>
+          <label class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer"><i class="fa-solid fa-paperclip"></i> Pièce Jointe<input type="file" onchange="uploadAttachment(event, '${sec.id}')" class="hidden"></label>
+          <button onclick="addAgendaSlot('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:text-rose-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-clock"></i> Planning</button>
         </div>
       `;
       container.appendChild(headerBox);
 
-      // RENDU DYNAMIQUE
-      if (sec.type === 'trace_admin') renderMapModule(container, sec);
-      if (sec.type === 'contacts') renderGlobalContactsModule(container);
+      // Génération des modules sous forme de chaînes HTML
+      const renderedModules = {};
+      
+      if (sec.type === 'trace_admin') renderedModules['mod_map'] = generateMapModuleHtml(sec);
+      if (sec.type === 'contacts') renderedModules['mod_global_contacts'] = generateGlobalContactsHtml();
 
-      if (sec.tables && sec.tables.length > 0) renderTablesModule(container, sec);
-      if (sec.sheets && sec.sheets.length > 0) renderSheetsModule(container, sec);
-      if (sec.timeline && sec.timeline.length > 0) renderAgendaModule(container, sec);
-      if (sec.tasks && sec.tasks.length > 0) renderTasksList(container, sec);
-      if (sec.localContacts && sec.localContacts.length > 0) renderLocalContactsModule(container, sec);
-      if (sec.images && sec.images.length > 0) renderImagesModule(container, sec);
-      if (sec.attachments && sec.attachments.length > 0) renderAttachmentsModule(container, sec);
-      if (sec.stickyNotes && sec.stickyNotes.length > 0) renderStickyNotesModule(container, sec);
+      sec.tables.forEach(t => renderedModules['tbl_' + t.id] = generateTableHtml(sec, t));
+      sec.sheets.forEach(s => renderedModules['sht_' + s.id] = generateSheetHtml(sec, s));
+      if (sec.timeline.length > 0) renderedModules['mod_agenda'] = generateAgendaHtml(sec);
+      if (sec.tasks.length > 0) renderedModules['mod_tasks'] = generateTasksHtml(sec);
+      if (sec.localContacts.length > 0) renderedModules['mod_local_contacts'] = generateLocalContactsHtml(sec);
+      if (sec.images.length > 0) renderedModules['mod_images'] = generateImagesHtml(sec);
+      if (sec.attachments.length > 0) renderedModules['mod_attachments'] = generateAttachmentsHtml(sec);
+      if (sec.stickyNotes.length > 0) renderedModules['mod_notes'] = generateStickyNotesHtml(sec);
+
+      // Synchronisation du layout
+      const actualModuleIds = Object.keys(renderedModules);
+      actualModuleIds.forEach(id => { if (!sec.layout.includes(id)) sec.layout.push(id); });
+      sec.layout = sec.layout.filter(id => actualModuleIds.includes(id));
+
+      // Ajout au DOM dans l'ordre du Layout
+      sec.layout.forEach(id => {
+        const div = document.createElement('div');
+        div.innerHTML = renderedModules[id];
+        container.appendChild(div.firstElementChild);
+      });
+
+      // Initialisation Leaflet après ajout au DOM
+      if (sec.type === 'trace_admin') setTimeout(() => initMap(sec), 150);
     }
 
     // --- FONCTIONS SECTION ---
     function renameSection(secId) {
       const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
       const newTitle = prompt("Nouveau nom de la section :", sec.title);
-      if (newTitle && newTitle.trim() !== "") {
-        sec.title = newTitle.trim();
-        saveData();
-        renderSidebar();
-        renderActiveSection();
-      }
+      if (newTitle && newTitle.trim() !== "") { sec.title = newTitle.trim(); saveData(); renderSidebar(); renderActiveSection(); }
     }
-
     function deleteSection(secId) {
       const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      if (confirm(`Es-tu sûr de vouloir supprimer la section "${sec.title}" et tout son contenu ?`)) {
+      if (confirm(`Supprimer la section "${sec.title}" et son contenu ?`)) {
         appData.sections = appData.sections.filter(s => s.id !== secId);
         activeSectionId = appData.sections.length > 0 ? appData.sections[0].id : null;
-        saveData();
-        renderSidebar();
+        saveData(); renderSidebar();
         if (activeSectionId) renderActiveSection(); else document.getElementById('main-content-viewport').innerHTML = '';
       }
     }
-
-
-    // --- MODULE CARTE GPX (RESTAURÉ) ---
-    function handleGPXUpload(event, secId) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const sec = appData.sections.find(s => s.id === secId);
-        if (sec) {
-          sec.gpxTrack = e.target.result;
-          saveData();
-          displayParsedGPX(e.target.result);
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function parseGPXText(gpxXmlText) {
-      try {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(gpxXmlText, "text/xml");
-        const points = [];
-        const elements = xmlDoc.querySelectorAll("trkpt, wpt, rtept");
-        elements.forEach(pt => {
-          const lat = parseFloat(pt.getAttribute("lat"));
-          const lon = parseFloat(pt.getAttribute("lon"));
-          const eleNode = pt.querySelector("ele");
-          const ele = eleNode ? parseFloat(eleNode.textContent) : 0;
-          if (!isNaN(lat) && !isNaN(lon)) { points.push({ lat, lon, ele }); }
-        });
-        return points;
-      } catch(err) { return []; }
-    }
-
-    function calculateHaversineDistance(p1, p2) {
-      const R = 6371000;
-      const rad = Math.PI / 180;
-      const dLat = (p2.lat - p1.lat) * rad;
-      const dLon = (p2.lon - p1.lon) * rad;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(p1.lat * rad) * Math.cos(p2.lat * rad) * Math.sin(dLon/2) * Math.sin(dLon/2);
-      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-    }
-
-    function calculateGPXStats(points) {
-      if (!points || points.length < 2) return { distanceKm: 0, eleGain: 0 };
-      let totalDist = 0, totalGain = 0;
-      for (let i = 1; i < points.length; i++) {
-        totalDist += calculateHaversineDistance(points[i-1], points[i]);
-        const eleDiff = points[i].ele - points[i-1].ele;
-        if (eleDiff > 0.5) totalGain += eleDiff;
-      }
-      return { distanceKm: (totalDist / 1000).toFixed(2), eleGain: Math.round(totalGain) };
-    }
-
-    function displayParsedGPX(gpxXmlText) {
-      const points = parseGPXText(gpxXmlText);
-      if (!points || points.length === 0) return;
-      const latLngs = points.map(p => [p.lat, p.lon]);
-
-      if (leafletMap) {
-        if (leafletPolyline) leafletMap.removeLayer(leafletPolyline);
-        leafletPolyline = L.polyline(latLngs, { color: '#16a34a', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(leafletMap);
-        leafletMap.fitBounds(leafletPolyline.getBounds(), { padding: [30, 30] });
-        leafletMap.invalidateSize();
-      }
-
-      const stats = calculateGPXStats(points);
-      
-      const distEl = document.getElementById('gpx-dist-val');
-      const eleEl = document.getElementById('gpx-ele-val');
-      const ptsEl = document.getElementById('gpx-pts-val');
-      const statEl = document.getElementById('gpx-status-val');
-
-      if(distEl) distEl.innerText = `${stats.distanceKm} km`;
-      if(eleEl) eleEl.innerText = `+${stats.eleGain} m`;
-      if(ptsEl) ptsEl.innerText = points.length;
-      if(statEl) {
-          statEl.innerText = "Tracé Chargé";
-          statEl.className = "text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-0.5";
+    function addNewCustomSectionPrompt() {
+      const title = prompt("Nom de la nouvelle section :");
+      if (title) {
+        appData.sections.push({ id: 'sec_' + Date.now(), title: title, type: "standard", layout: [], tasks: [], stickyNotes: [], timeline: [], sheets: [], tables: [], localContacts: [], images: [], attachments: [], gpxTracks: [] });
+        saveData(); renderSidebar();
       }
     }
 
-    function renderMapModule(container, sec) {
-      const mapCard = document.createElement('div');
-      mapCard.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 space-y-4';
-      mapCard.innerHTML = `
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
-          <div>
-            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <i class="fa-solid fa-map text-emerald-600"></i> Carte Interactive & Visualiseur GPX
-            </h3>
-            <p class="text-xs text-slate-500">Choisissez la vue Satellite ou Plan en haut à droite.</p>
+    // --- SÉLECTION DES RESPONSABLES ---
+    function getContactOptionsHtml(selectedId, secId) {
+      let html = `<option value="">-- Non assigné --</option>`;
+      const sec = appData.sections.find(s => s.id === secId);
+      if (sec && sec.localContacts && sec.localContacts.length > 0) {
+        html += `<optgroup label="Contacts de la section">`;
+        sec.localContacts.forEach(c => html += `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name}</option>`);
+        html += `</optgroup>`;
+      }
+      if (appData.contacts.length > 0) {
+        html += `<optgroup label="Répertoire Global & CSV">`;
+        appData.contacts.forEach(c => html += `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name} — ${c.org || c.role || ''}</option>`);
+        html += `</optgroup>`;
+      }
+      return html;
+    }
+
+
+    // --- MODULES HTML GENERATORS (Avec Wrap Draggable) ---
+    
+    // 1. CARTE (Multi-GPX + My Maps)
+    function generateMapModuleHtml(sec) {
+      let gpxListHtml = '';
+      sec.gpxTracks.forEach(trk => {
+        gpxListHtml += `
+          <div class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-200 text-xs mb-1">
+            <span class="font-medium text-emerald-700 truncate"><i class="fa-solid fa-route mr-1"></i> ${trk.name}</span>
+            <button onclick="deleteGPXTrack('${sec.id}', '${trk.id}')" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash-can"></i></button>
           </div>
-          <div class="flex items-center gap-2">
-            <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 shadow-sm transition">
-              <i class="fa-solid fa-file-code"></i> Charger Fichier GPX
-              <input type="file" onchange="handleGPXUpload(event, '${sec.id}')" accept=".gpx" class="hidden">
+        `;
+      });
+
+      const myMapsFrame = sec.myMapsUrl ? `<iframe src="${sec.myMapsUrl}" width="100%" height="480" class="rounded-xl border border-slate-200 mt-3" allowfullscreen></iframe>` : '';
+
+      const content = `
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-4 pr-6">
+          <div><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-map text-emerald-600"></i> Carte Interactive & My Maps</h3></div>
+          <div>
+            <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-file-code"></i> Ajouter GPX
+              <input type="file" multiple onchange="handleGPXUpload(event, '${sec.id}')" accept=".gpx" class="hidden">
             </label>
           </div>
         </div>
-
-        <div id="gpx-stats-bar" class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center text-xs">
-          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Distance</span><span id="gpx-dist-val" class="text-base font-extrabold text-emerald-700">-- km</span></div>
-          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Dénivelé (D+)</span><span id="gpx-ele-val" class="text-base font-extrabold text-indigo-700">-- m</span></div>
-          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Points</span><span id="gpx-pts-val" class="text-base font-bold text-slate-700">--</span></div>
-          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Statut</span><span id="gpx-status-val" class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full inline-block mt-0.5">En attente</span></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2">
+            <div id="gpx-map" class="border border-slate-200 shadow-inner"></div>
+            ${myMapsFrame}
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="text-xs font-bold text-slate-500 block mb-1">Intégration Google My Maps (URL) :</label>
+              <input type="text" value="${sec.myMapsUrl || ''}" placeholder="Ex: https://www.google.com/maps/d/embed?mid=..." onchange="updateMyMapsUrl('${sec.id}', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs focus:border-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 block mb-1">Tracés GPX superposés :</label>
+              ${gpxListHtml || '<div class="text-xs text-slate-400 italic">Aucun fichier GPX chargé.</div>'}
+            </div>
+          </div>
         </div>
-
-        <div id="gpx-map"></div>
       `;
-      container.appendChild(mapCard);
-
-      setTimeout(() => {
-        try {
-          if (leafletMap) { leafletMap.remove(); }
-          
-          leafletMap = L.map('gpx-map').setView([43.4633, -1.4519], 13);
-
-          const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
-          });
-
-          const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 18,
-            attribution: 'Tiles &copy; Esri'
-          });
-
-          osmStandard.addTo(leafletMap);
-
-          L.control.layers({
-            "🗺️ Plan (OpenStreetMap)": osmStandard,
-            "🛰️ Satellite (Esri)": esriSatellite
-          }, null, { position: 'topright' }).addTo(leafletMap);
-
-          leafletMap.invalidateSize();
-
-          // LOAD SAVED GPX
-          if (sec.gpxTrack) displayParsedGPX(sec.gpxTrack);
-        } catch(e) {
-          console.error("Erreur d'affichage de la carte :", e);
-        }
-      }, 150);
+      return wrapModuleDraggable('mod_map', content);
     }
 
-
-    // --- MODULE TABLEAUX NATIFS INTÉGRÉS ---
-    function addNativeTable(secId) {
+    function updateMyMapsUrl(secId, val) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (sec) { sec.myMapsUrl = val; saveData(); renderActiveSection(); }
+    }
+    function handleGPXUpload(event, secId) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
-      sec.tables.push({
-        id: 'tbl_' + Date.now(),
-        title: "Nouveau Tableau",
-        headers: ["Colonne 1", "Colonne 2", "Colonne 3"],
-        rows: [ ["", "", ""] ]
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          sec.gpxTracks.push({ id: 'gpx_' + Date.now() + Math.random(), name: file.name, data: e.target.result });
+          saveData(); renderActiveSection();
+        };
+        reader.readAsText(file);
       });
-      saveData();
-      renderActiveSection();
     }
-
-    function updateTableTitle(secId, tableId, val) {
+    function deleteGPXTrack(secId, trackId) {
       const sec = appData.sections.find(s => s.id === secId);
-      const table = sec?.tables.find(t => t.id === tableId);
-      if (table) { table.title = val; saveData(); }
+      if (sec) { sec.gpxTracks = sec.gpxTracks.filter(t => t.id !== trackId); saveData(); renderActiveSection(); }
     }
 
-    function updateTableHeader(secId, tableId, colIndex, val) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const table = sec?.tables.find(t => t.id === tableId);
-      if (table) { table.headers[colIndex] = val; saveData(); }
-    }
+    function initMap(sec) {
+      if (leafletMap) { leafletMap.remove(); }
+      leafletMap = L.map('gpx-map').setView([43.4633, -1.4519], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(leafletMap);
+      
+      const colors = ['#16a34a', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6'];
+      let bounds = L.latLngBounds();
 
-    function updateTableCell(secId, tableId, rowIndex, colIndex, val) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const table = sec?.tables.find(t => t.id === tableId);
-      if (table) { table.rows[rowIndex][colIndex] = val; saveData(); }
-    }
-
-    function addTableRow(secId, tableId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const table = sec?.tables.find(t => t.id === tableId);
-      if (table) {
-        const newRow = new Array(table.headers.length).fill("");
-        table.rows.push(newRow);
-        saveData(); 
-        renderActiveSection();
-      }
-    }
-
-    function addTableColumn(secId, tableId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const table = sec?.tables.find(t => t.id === tableId);
-      if (table) {
-        table.headers.push("Nouvelle Col");
-        table.rows.forEach(row => row.push(""));
-        saveData(); 
-        renderActiveSection();
-      }
-    }
-
-    function deleteTableRow(secId, tableId, rowIndex) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const table = sec?.tables.find(t => t.id === tableId);
-      if (table) {
-        table.rows.splice(rowIndex, 1);
-        saveData(); 
-        renderActiveSection();
-      }
-    }
-
-    function deleteTable(secId, tableId) {
-       const sec = appData.sections.find(s => s.id === secId);
-       if (sec) {
-         sec.tables = sec.tables.filter(t => t.id !== tableId);
-         saveData(); 
-         renderActiveSection();
-       }
-    }
-
-    function renderTablesModule(container, sec) {
-      sec.tables.forEach(table => {
-        const card = document.createElement('div');
-        card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6 relative group';
-
-        let headersHtml = '';
-        table.headers.forEach((h, colIndex) => {
-          headersHtml += `
-            <th class="p-0 border-r border-slate-200 bg-slate-100 min-w-[120px]">
-              <input type="text" value="${h}" onchange="updateTableHeader('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent font-bold text-slate-700 text-xs">
-            </th>
-          `;
+      sec.gpxTracks.forEach((trk, idx) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(trk.data, "text/xml");
+        const points = [];
+        xmlDoc.querySelectorAll("trkpt, wpt, rtept").forEach(pt => {
+          const lat = parseFloat(pt.getAttribute("lat"));
+          const lon = parseFloat(pt.getAttribute("lon"));
+          if (!isNaN(lat) && !isNaN(lon)) points.push([lat, lon]);
         });
-        headersHtml += `<th class="w-10 bg-slate-100 border-l border-slate-200"></th>`;
-
-        let rowsHtml = '';
-        table.rows.forEach((row, rowIndex) => {
-          let cellsHtml = '';
-          row.forEach((cell, colIndex) => {
-            cellsHtml += `
-              <td class="p-0 border-r border-slate-200 border-b">
-                <input type="text" value="${cell}" onchange="updateTableCell('${sec.id}', '${table.id}', ${rowIndex}, ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent text-xs text-slate-800">
-              </td>
-            `;
-          });
-          cellsHtml += `
-            <td class="p-0 border-b border-l border-slate-200 text-center bg-slate-50">
-              <button onclick="deleteTableRow('${sec.id}', '${table.id}', ${rowIndex})" class="text-slate-400 hover:text-rose-500 transition px-2 py-1"><i class="fa-solid fa-trash-can text[10px]"></i></button>
-            </td>
-          `;
-          rowsHtml += `<tr class="hover:bg-slate-50 transition">${cellsHtml}</tr>`;
-        });
-
-        card.innerHTML = `
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b pb-3">
-            <div class="flex-1 flex items-center gap-2">
-              <i class="fa-solid fa-table text-emerald-600"></i>
-              <input type="text" value="${table.title || ''}" placeholder="Titre du tableau..." onchange="updateTableTitle('${sec.id}', '${table.id}', this.value)" class="font-bold text-slate-800 text-sm bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-slate-50 px-1 w-full sm:w-1/2 rounded transition">
-            </div>
-            <div class="flex items-center gap-2">
-              <button onclick="addTableRow('${sec.id}', '${table.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border transition">
-                + Ligne
-              </button>
-              <button onclick="addTableColumn('${sec.id}', '${table.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border transition">
-                + Colonne
-              </button>
-              <button onclick="deleteTable('${sec.id}', '${table.id}')" class="text-xs bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 font-medium px-2.5 py-1.5 rounded-lg transition" title="Supprimer le tableau complet">
-                <i class="fa-solid fa-trash-can"></i>
-              </button>
-            </div>
-          </div>
-          <div class="w-full overflow-x-auto border border-slate-200 rounded-xl">
-            <table class="w-full text-left border-collapse">
-              <thead><tr>${headersHtml}</tr></thead>
-              <tbody>${rowsHtml}</tbody>
-            </table>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-
-    // --- MODULE ANCIENS GOOGLE SHEETS (Héritage) ---
-    function updateSheetTitle(secId, sheetId, newTitle) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      const sheet = sec.sheets.find(s => s.id === sheetId);
-      if (sheet) {
-        sheet.title = newTitle;
-        saveData();
-      }
-    }
-
-    function deleteSheet(secId, sheetId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      sec.sheets = sec.sheets.filter(s => s.id !== sheetId);
-      saveData();
-      renderActiveSection();
-    }
-
-    function renderSheetsModule(container, sec) {
-      sec.sheets.forEach(sheet => {
-        const card = document.createElement('div');
-        card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6 relative group';
-        const iframeUrl = sheet.url.includes('?') ? sheet.url + '&rm=minimal' : sheet.url + '?rm=minimal';
-
-        card.innerHTML = `
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b pb-3">
-            <div class="flex-1 flex items-center gap-2">
-              <i class="fa-brands fa-google text-emerald-600"></i>
-              <input type="text" value="${sheet.title || ''}" placeholder="Titre du fichier Google Sheets..." onchange="updateSheetTitle('${sec.id}', '${sheet.id}', this.value)" class="font-bold text-slate-800 text-sm bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-slate-50 px-1 w-full sm:w-1/2 rounded transition">
-            </div>
-            <div class="flex items-center gap-2">
-              <a href="${sheet.url}" target="_blank" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border transition">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i> Ouvrir
-              </a>
-              <button onclick="deleteSheet('${sec.id}', '${sheet.id}')" class="text-xs bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 font-medium px-2.5 py-1.5 rounded-lg transition">
-                <i class="fa-solid fa-trash-can"></i>
-              </button>
-            </div>
-          </div>
-          <div class="w-full h-[500px] border border-slate-200 rounded-xl overflow-hidden bg-slate-50 relative">
-            <iframe src="${iframeUrl}" class="w-full h-full border-none absolute inset-0"></iframe>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-
-    // --- MODULE IMAGES ---
-    function uploadImage(event, secId) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const sec = appData.sections.find(s => s.id === secId);
-        if (sec) {
-          sec.images.push({ id: 'img_' + Date.now(), name: file.name, dataUrl: e.target.result });
-          saveData();
-          renderActiveSection();
+        
+        if (points.length > 0) {
+          const color = colors[idx % colors.length];
+          const polyline = L.polyline(points, { color: color, weight: 4, opacity: 0.9 }).addTo(leafletMap);
+          bounds.extend(polyline.getBounds());
         }
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function deleteImage(secId, imgId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      sec.images = sec.images.filter(i => i.id !== imgId);
-      saveData();
-      renderActiveSection();
-    }
-
-    function renderImagesModule(container, sec) {
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
-      
-      let gridHtml = '';
-      sec.images.forEach(img => {
-        gridHtml += `
-          <div class="relative group rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50 aspect-video flex items-center justify-center">
-            <img src="${img.dataUrl}" alt="${img.name}" class="object-cover w-full h-full">
-            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-3">
-              <a href="${img.dataUrl}" download="${img.name}" class="bg-white text-slate-900 p-2 rounded-full hover:scale-110 transition shadow"><i class="fa-solid fa-download"></i></a>
-              <button onclick="deleteImage('${sec.id}', '${img.id}')" class="bg-rose-500 text-white p-2 rounded-full hover:scale-110 transition shadow"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
-          </div>
-        `;
       });
-
-      card.innerHTML = `
-        <div class="border-b pb-3 mb-4">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-image text-blue-500"></i> Galerie d'Images
-          </h3>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          ${gridHtml}
-        </div>
-      `;
-      container.appendChild(card);
+      if (bounds.isValid()) leafletMap.fitBounds(bounds, { padding: [20, 20] });
     }
 
-
-    // --- MODULE PIÈCES JOINTES ---
-    function uploadAttachment(event, secId) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const sec = appData.sections.find(s => s.id === secId);
-        if (sec) {
-          sec.attachments.push({ id: 'att_' + Date.now(), name: file.name, dataUrl: e.target.result });
-          saveData();
-          renderActiveSection();
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function deleteAttachment(secId, attId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      sec.attachments = sec.attachments.filter(a => a.id !== attId);
-      saveData();
-      renderActiveSection();
-    }
-
-    function renderAttachmentsModule(container, sec) {
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
-      
-      let listHtml = '';
-      sec.attachments.forEach(att => {
-        listHtml += `
-          <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
-            <div class="flex items-center gap-3 overflow-hidden">
-              <div class="bg-purple-100 text-purple-700 p-2 rounded-lg"><i class="fa-solid fa-file"></i></div>
-              <span class="text-xs font-semibold text-slate-700 truncate">${att.name}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <a href="${att.dataUrl}" download="${att.name}" class="text-slate-500 hover:text-emerald-600 transition"><i class="fa-solid fa-download"></i></a>
-              <button onclick="deleteAttachment('${sec.id}', '${att.id}')" class="text-slate-400 hover:text-rose-600 transition"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
-          </div>
-        `;
-      });
-
-      card.innerHTML = `
-        <div class="border-b pb-3 mb-4">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-paperclip text-purple-500"></i> Pièces Jointes
-          </h3>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          ${listHtml}
-        </div>
-      `;
-      container.appendChild(card);
-    }
-
-
-    // --- MODULE CONTACTS LOCAUX (Spécifiques à la section) ---
-    function addLocalContact(secId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      sec.localContacts.push({
-        id: 'lc_' + Date.now(), name: "Nouveau Contact", role: "Partenaire/Bénévole", org: "", phone: "", email: ""
-      });
-      saveData();
-      renderActiveSection();
-    }
-
-    function updateLocalContactField(secId, contactId, field, value) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      const c = sec.localContacts.find(x => x.id === contactId);
-      if (c) { c[field] = value; saveData(); }
-    }
-
-    function deleteLocalContact(secId, contactId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      sec.localContacts = sec.localContacts.filter(x => x.id !== contactId);
-      saveData();
-      renderActiveSection();
-    }
-
-    function renderLocalContactsModule(container, sec) {
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
-      
+    // 2. CONTACTS GLOBAUX
+    function generateGlobalContactsHtml() {
       let rows = '';
-      sec.localContacts.forEach(c => {
+      appData.contacts.forEach(c => {
         rows += `
           <tr class="hover:bg-slate-50/80 transition">
-            <td class="p-2.5 font-bold text-slate-900"><input type="text" value="${c.name || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'name', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-            <td class="p-2.5"><input type="text" value="${c.role || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'role', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-            <td class="p-2.5"><input type="text" value="${c.org || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'org', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-            <td class="p-2.5"><input type="text" value="${c.phone || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'phone', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-            <td class="p-2.5 text-right"><button onclick="deleteLocalContact('${sec.id}', '${c.id}')" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
-          </tr>
-        `;
+            <td class="p-2.5 font-bold text-slate-900"><input type="text" value="${c.name || ''}" onchange="updateGlobalContactField('${c.id}', 'name', this.value)" class="bg-transparent focus:bg-white w-full"></td>
+            <td class="p-2.5"><input type="text" value="${c.role || ''}" onchange="updateGlobalContactField('${c.id}', 'role', this.value)" class="bg-transparent focus:bg-white w-full"></td>
+            <td class="p-2.5"><input type="text" value="${c.org || ''}" onchange="updateGlobalContactField('${c.id}', 'org', this.value)" class="bg-transparent focus:bg-white w-full"></td>
+            <td class="p-2.5"><input type="text" value="${c.phone || ''}" onchange="updateGlobalContactField('${c.id}', 'phone', this.value)" class="bg-transparent focus:bg-white w-full"></td>
+            <td class="p-2.5"><input type="text" value="${c.email || ''}" onchange="updateGlobalContactField('${c.id}', 'email', this.value)" class="bg-transparent focus:bg-white w-full"></td>
+            <td class="p-2.5 text-right"><button onclick="deleteGlobalContact('${c.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button></td>
+          </tr>`;
       });
-
-      card.innerHTML = `
-        <div class="border-b pb-3">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-users text-indigo-500"></i> Contacts associés à cette section
-          </h3>
+      const content = `
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 pr-6">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-address-book text-emerald-600"></i> Répertoire Global & Fichiers Importés (${appData.contacts.length})</h3>
+          <button onclick="addGlobalContact()" class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1.5 rounded-lg border border-emerald-200">+ Nouveau Contact</button>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-700">
-            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] border-b">
-              <tr><th class="p-2.5">Nom</th><th class="p-2.5">Rôle</th><th class="p-2.5">Entreprise/Club</th><th class="p-2.5">Tél / Email</th><th class="p-2.5 text-right">Action</th></tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">${rows}</tbody>
-          </table>
-        </div>
-      `;
-      container.appendChild(card);
-    }
-
-
-    // --- MODULE GLOBAL CONTACTS (Legacy) ---
-    function renderGlobalContactsModule(container) {
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
-      const contacts = appData.contacts || [];
-      
-      let rows = '';
-      if (contacts.length === 0) {
-        rows = `<tr><td colspan="6" class="p-4 text-center text-slate-400 italic">Aucun contact enregistré.</td></tr>`;
-      } else {
-        contacts.forEach(c => {
-          rows += `
-            <tr class="hover:bg-slate-50/80 transition">
-              <td class="p-2.5 font-bold text-slate-900"><input type="text" value="${c.name || ''}" onchange="updateGlobalContactField('${c.id}', 'name', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-              <td class="p-2.5"><input type="text" value="${c.role || ''}" onchange="updateGlobalContactField('${c.id}', 'role', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-              <td class="p-2.5"><input type="text" value="${c.org || ''}" onchange="updateGlobalContactField('${c.id}', 'org', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-              <td class="p-2.5"><input type="text" value="${c.phone || ''}" onchange="updateGlobalContactField('${c.id}', 'phone', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-              <td class="p-2.5"><input type="text" value="${c.email || ''}" onchange="updateGlobalContactField('${c.id}', 'email', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
-              <td class="p-2.5 text-right"><button onclick="deleteGlobalContact('${c.id}')" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
-            </tr>
-          `;
-        });
-      }
-
-      card.innerHTML = `
-        <div class="flex justify-between items-center border-b pb-3">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i class="fa-solid fa-address-book text-emerald-600"></i> Répertoire Global (${contacts.length})
-          </h3>
-          <button onclick="addGlobalContact()" class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium px-2.5 py-1.5 rounded-lg border border-emerald-200">
-            + Nouveau Contact
-          </button>
-        </div>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto mt-4">
           <table class="w-full text-left text-xs text-slate-700">
             <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] border-b">
               <tr><th class="p-2.5">Nom</th><th class="p-2.5">Rôle</th><th class="p-2.5">Entité / Club</th><th class="p-2.5">Téléphone</th><th class="p-2.5">Email</th><th class="p-2.5 text-right">Action</th></tr>
@@ -891,209 +541,249 @@
           </table>
         </div>
       `;
-      container.appendChild(card);
+      return wrapModuleDraggable('mod_global_contacts', content);
     }
+    function addGlobalContact() { appData.contacts.push({ id: 'c_' + Date.now(), name: "Nouveau Contact", role: "", org: "", phone: "", email: "" }); saveData(); renderActiveSection(); }
+    function updateGlobalContactField(cId, f, v) { const c = appData.contacts.find(x => x.id === cId); if (c) { c[f] = v; saveData(); } }
+    function deleteGlobalContact(cId) { appData.contacts = appData.contacts.filter(x => x.id !== cId); saveData(); renderActiveSection(); }
 
-    function addGlobalContact() {
-      if (!appData.contacts) appData.contacts = [];
-      appData.contacts.push({ id: 'c_' + Date.now(), name: "Nouveau Contact", role: "", org: "", phone: "", email: "" });
-      saveData();
-      renderActiveSection();
-    }
-    function updateGlobalContactField(contactId, field, value) {
-      const c = appData.contacts.find(x => x.id === contactId);
-      if (c) { c[field] = value; saveData(); }
-    }
-    function deleteGlobalContact(contactId) {
-      appData.contacts = appData.contacts.filter(x => x.id !== contactId);
-      saveData();
-      renderActiveSection();
-    }
-
-
-    // --- SELECTION DES RESPONSABLES DANS LES TACHES ---
-    function getContactOptionsHtml(selectedId, secId) {
-      let html = `<option value="">-- Non assigné --</option>`;
-      
-      const sec = appData.sections.find(s => s.id === secId);
-      if (sec && sec.localContacts && sec.localContacts.length > 0) {
-        html += `<optgroup label="Contacts de cette section">`;
-        sec.localContacts.forEach(c => {
-          html += `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name} (${c.role})</option>`;
-        });
-        html += `</optgroup>`;
-      }
-
-      const globals = Array.isArray(appData.contacts) ? appData.contacts : Object.values(appData.contacts || {});
-      if (globals.length > 0) {
-        html += `<optgroup label="Répertoire Global">`;
-        globals.forEach(c => {
-          html += `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name} (${c.role})</option>`;
-        });
-        html += `</optgroup>`;
-      }
-      return html;
-    }
-
-
-    // --- MODULE TÂCHES ---
-    function renderTasksList(container, sec) {
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
-      
+    // 3. TACHES
+    function generateTasksHtml(sec) {
       let listHtml = '';
       sec.tasks.forEach(task => {
         const currentStatus = task.status || 'À faire';
-        const statusColors = {
-          'À faire': 'bg-slate-200 text-slate-700', 'En cours': 'bg-amber-100 text-amber-800 border-amber-300', 'Validé': 'bg-emerald-100 text-emerald-800 border-emerald-300'
-        };
+        const statusColors = { 'À faire': 'bg-slate-200 text-slate-700', 'En cours': 'bg-amber-100 text-amber-800', 'Validé': 'bg-emerald-100 text-emerald-800' };
         listHtml += `
-          <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs hover:border-slate-300 transition">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <input type="text" value="${task.name || ''}" onchange="updateTaskField('${sec.id}', '${task.id}', 'name', this.value)" class="font-bold text-slate-900 bg-transparent flex-1 border-b border-transparent focus:border-emerald-500 focus:bg-white rounded px-1">
-              <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <select onchange="updateTaskField('${sec.id}', '${task.id}', 'status', this.value)" class="text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusColors[currentStatus] || 'bg-slate-100'}">
-                  <option value="À faire" ${currentStatus === 'À faire' ? 'selected' : ''}>À faire</option>
-                  <option value="En cours" ${currentStatus === 'En cours' ? 'selected' : ''}>En cours</option>
-                  <option value="Validé" ${currentStatus === 'Validé' ? 'selected' : ''}>Validé</option>
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+              <input type="text" value="${task.name || ''}" onchange="updateTaskField('${sec.id}', '${task.id}', 'name', this.value)" class="font-bold text-slate-900 bg-transparent flex-1 focus:bg-white rounded px-1">
+              <div class="flex items-center gap-2 justify-end">
+                <select onchange="updateTaskField('${sec.id}', '${task.id}', 'status', this.value)" class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusColors[currentStatus]}">
+                  <option value="À faire" ${currentStatus === 'À faire' ? 'selected' : ''}>À faire</option><option value="En cours" ${currentStatus === 'En cours' ? 'selected' : ''}>En cours</option><option value="Validé" ${currentStatus === 'Validé' ? 'selected' : ''}>Validé</option>
                 </select>
                 <button onclick="deleteTask('${sec.id}', '${task.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-slate-500">
-              <div class="flex items-center gap-1">
-                <i class="fa-solid fa-user text-slate-400 text-[10px]"></i>
-                <select onchange="updateTaskField('${sec.id}', '${task.id}', 'resp', this.value)" class="bg-white border border-slate-200 rounded p-1 w-full text-slate-700">
-                  ${getContactOptionsHtml(task.resp, sec.id)}
-                </select>
-              </div>
-              <div class="flex items-center gap-1">
-                <i class="fa-solid fa-calendar text-slate-400 text-[10px]"></i>
-                <input type="date" value="${task.date || ''}" onchange="updateTaskField('${sec.id}', '${task.id}', 'date', this.value)" class="bg-white border border-slate-200 rounded p-1 w-full text-slate-700">
-              </div>
-              <div class="flex items-center gap-1">
-                <i class="fa-solid fa-comment text-slate-400 text-[10px]"></i>
-                <input type="text" value="${task.notes || ''}" placeholder="Notes..." onchange="updateTaskField('${sec.id}', '${task.id}', 'notes', this.value)" class="bg-white border border-slate-200 rounded p-1 w-full text-slate-700">
-              </div>
+              <div class="flex items-center gap-1"><i class="fa-solid fa-user text-slate-400"></i><select onchange="updateTaskField('${sec.id}', '${task.id}', 'resp', this.value)" class="bg-white border rounded p-1 w-full text-slate-700">${getContactOptionsHtml(task.resp, sec.id)}</select></div>
+              <div class="flex items-center gap-1"><i class="fa-solid fa-calendar text-slate-400"></i><input type="date" value="${task.date || ''}" onchange="updateTaskField('${sec.id}', '${task.id}', 'date', this.value)" class="bg-white border rounded p-1 w-full text-slate-700"></div>
+              <div class="flex items-center gap-1"><i class="fa-solid fa-comment text-slate-400"></i><input type="text" value="${task.notes || ''}" placeholder="Notes..." onchange="updateTaskField('${sec.id}', '${task.id}', 'notes', this.value)" class="bg-white border rounded p-1 w-full text-slate-700"></div>
             </div>
-          </div>
-        `;
+          </div>`;
       });
+      const content = `<div class="border-b pb-3 mb-3 pr-6"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-600"></i> Tâches (${sec.tasks.length})</h3></div><div class="space-y-3">${listHtml}</div>`;
+      return wrapModuleDraggable('mod_tasks', content);
+    }
+    function addNewTask(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.tasks.push({ id: 'k_' + Date.now(), name: "Nouvelle tâche", resp: "", date: "", status: "À faire", notes: "" }); saveData(); renderActiveSection(); } }
+    function updateTaskField(sId, tId, f, v) { const s = appData.sections.find(x => x.id === sId); const t = s?.tasks.find(x => x.id === tId); if(t) { t[f] = v; saveData(); } }
+    function deleteTask(sId, tId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.tasks = s.tasks.filter(x => x.id !== tId); saveData(); renderActiveSection(); } }
 
-      card.innerHTML = `
-        <div class="border-b pb-3 mb-3"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-600"></i> Liste des Tâches (${sec.tasks.length})</h3></div>
-        <div class="space-y-3">${listHtml}</div>
-      `;
-      container.appendChild(card);
-    }
-    
-    function addNewTask(secId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      sec.tasks.push({ id: 'k_' + Date.now(), name: "Nouvelle tâche", resp: "", date: new Date().toISOString().split('T')[0], status: "À faire", notes: "" });
-      saveData(); renderActiveSection();
-    }
-    function updateTaskField(secId, taskId, field, value) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const task = sec?.tasks.find(t => t.id === taskId);
-      if (task) { task[field] = value; saveData(); }
-    }
-    function deleteTask(secId, taskId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (sec) { sec.tasks = sec.tasks.filter(t => t.id !== taskId); saveData(); renderActiveSection(); }
-    }
-
-
-    // --- MODULE NOTES (Pense-bêtes) ---
-    function renderStickyNotesModule(container, sec) {
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
-      
+    // 4. NOTES
+    function generateStickyNotesHtml(sec) {
       let listHtml = '';
       sec.stickyNotes.forEach(note => {
         listHtml += `
           <div class="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1.5 relative group">
             <button onclick="deleteStickyNote('${sec.id}', '${note.id}')" class="absolute top-2 right-2 text-amber-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-xmark"></i></button>
-            <input type="text" value="${note.title || ''}" placeholder="Titre de la note..." onchange="updateStickyNote('${sec.id}', '${note.id}', 'title', this.value)" class="font-bold text-amber-900 bg-transparent w-full focus:bg-white focus:p-0.5 rounded text-xs">
-            <textarea placeholder="Contenu de la note..." onchange="updateStickyNote('${sec.id}', '${note.id}', 'content', this.value)" class="w-full text-amber-800 text-xs bg-transparent border-none p-0 resize-none focus:bg-white focus:p-1 rounded min-h-[50px]">${note.content || ''}</textarea>
-          </div>
-        `;
+            <input type="text" value="${note.title || ''}" placeholder="Titre..." onchange="updateStickyNote('${sec.id}', '${note.id}', 'title', this.value)" class="font-bold text-amber-900 bg-transparent w-full focus:bg-white rounded text-xs">
+            <textarea placeholder="Contenu..." onchange="updateStickyNote('${sec.id}', '${note.id}', 'content', this.value)" class="w-full text-amber-800 text-xs bg-transparent border-none resize-none focus:bg-white rounded min-h-[50px] p-1">${note.content || ''}</textarea>
+          </div>`;
       });
-
-      card.innerHTML = `
-        <div class="border-b pb-3 mb-3"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-note-sticky text-amber-500"></i> Pense-Bêtes & Notes (${sec.stickyNotes.length})</h3></div>
-        <div class="space-y-3">${listHtml}</div>
-      `;
-      container.appendChild(card);
+      const content = `<div class="border-b pb-3 mb-3 pr-6"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-note-sticky text-amber-500"></i> Pense-Bêtes (${sec.stickyNotes.length})</h3></div><div class="space-y-3">${listHtml}</div>`;
+      return wrapModuleDraggable('mod_notes', content);
     }
+    function addStickyNote(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.stickyNotes.push({ id: 'sn_' + Date.now(), title: "Nouvelle Note", content: "" }); saveData(); renderActiveSection(); } }
+    function updateStickyNote(sId, nId, f, v) { const s = appData.sections.find(x => x.id === sId); const n = s?.stickyNotes.find(x => x.id === nId); if(n) { n[f] = v; saveData(); } }
+    function deleteStickyNote(sId, nId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.stickyNotes = s.stickyNotes.filter(x => x.id !== nId); saveData(); renderActiveSection(); } }
 
-    function addStickyNote(secId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      sec.stickyNotes.push({ id: 'sn_' + Date.now(), title: "Nouvelle Note", content: "" });
-      saveData(); renderActiveSection();
-    }
-    function updateStickyNote(secId, noteId, field, val) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const note = sec?.stickyNotes.find(n => n.id === noteId);
-      if (note) { note[field] = val; saveData(); }
-    }
-    function deleteStickyNote(secId, noteId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (sec) { sec.stickyNotes = sec.stickyNotes.filter(n => n.id !== noteId); saveData(); renderActiveSection(); }
-    }
-
-
-    // --- MODULE AGENDA / PLANNING ---
-    function renderAgendaModule(container, sec) {
-      const card = document.createElement('div');
-      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
-      
+    // 5. AGENDA
+    function generateAgendaHtml(sec) {
       let listHtml = '';
       sec.timeline.forEach((item) => {
         listHtml += `
-          <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+          <div class="flex flex-wrap items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
             <input type="time" value="${item.time || ''}" onchange="updateAgendaItem('${sec.id}', '${item.id}', 'time', this.value)" class="w-24 font-bold text-emerald-700 bg-white border rounded p-1 text-center">
-            <input type="text" placeholder="Activité" value="${item.activity || ''}" onchange="updateAgendaItem('${sec.id}', '${item.id}', 'activity', this.value)" class="flex-1 font-medium bg-white border rounded p-1">
+            <input type="text" placeholder="Activité" value="${item.activity || ''}" onchange="updateAgendaItem('${sec.id}', '${item.id}', 'activity', this.value)" class="flex-1 min-w-[150px] font-medium bg-white border rounded p-1">
+            <select onchange="updateAgendaItem('${sec.id}', '${item.id}', 'resp', this.value)" class="bg-white border rounded p-1 text-slate-700 min-w-[120px]">${getContactOptionsHtml(item.resp, sec.id)}</select>
             <button onclick="deleteAgendaItem('${sec.id}', '${item.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
-          </div>
-        `;
+          </div>`;
+      });
+      const content = `<div class="border-b pb-3 mb-3 pr-6"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-clock text-rose-500"></i> Chronologie / Agenda (${sec.timeline.length})</h3></div><div class="space-y-2">${listHtml}</div>`;
+      return wrapModuleDraggable('mod_agenda', content);
+    }
+    function addAgendaSlot(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.timeline.push({ id: 't_' + Date.now(), time: "08:00", activity: "Nouvel événement", resp: "" }); saveData(); renderActiveSection(); } }
+    function updateAgendaItem(sId, iId, f, v) { const s = appData.sections.find(x => x.id === sId); const i = s?.timeline.find(x => x.id === iId); if(i) { i[f] = v; saveData(); } }
+    function deleteAgendaItem(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.timeline = s.timeline.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
+
+    // 6. TABLEAUX NATIFS
+    function generateTableHtml(sec, table) {
+      let headersHtml = '';
+      table.headers.forEach((h, colIndex) => {
+        headersHtml += `<th class="p-0 border-r bg-slate-100 min-w-[120px]"><input type="text" value="${h}" onchange="updateTableHeader('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent font-bold text-slate-700 text-xs"></th>`;
+      });
+      headersHtml += `<th class="w-10 bg-slate-100 border-l"></th>`;
+
+      let rowsHtml = '';
+      table.rows.forEach((row, rowIndex) => {
+        let cellsHtml = '';
+        row.forEach((cell, colIndex) => {
+          cellsHtml += `<td class="p-0 border-r border-b"><input type="text" value="${cell}" onchange="updateTableCell('${sec.id}', '${table.id}', ${rowIndex}, ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent text-xs text-slate-800"></td>`;
+        });
+        cellsHtml += `<td class="p-0 border-b border-l text-center bg-slate-50"><button onclick="deleteTableRow('${sec.id}', '${table.id}', ${rowIndex})" class="text-slate-400 hover:text-rose-500"><i class="fa-solid fa-trash-can text[10px]"></i></button></td>`;
+        rowsHtml += `<tr class="hover:bg-slate-50">${cellsHtml}</tr>`;
       });
 
-      card.innerHTML = `
-        <div class="border-b pb-3 mb-3"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-clock text-rose-500"></i> Chronologie / Agenda (${sec.timeline.length})</h3></div>
-        <div class="space-y-2">${listHtml}</div>
+      const content = `
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3 pr-6 mb-4">
+          <div class="flex-1 flex items-center gap-2">
+            <i class="fa-solid fa-table text-emerald-600"></i>
+            <input type="text" value="${table.title || ''}" placeholder="Titre du tableau..." onchange="updateTableTitle('${sec.id}', '${table.id}', this.value)" class="font-bold text-slate-800 text-sm bg-transparent focus:bg-slate-50 w-full sm:w-1/2 rounded px-1">
+          </div>
+          <div class="flex gap-2">
+            <button onclick="addTableRow('${sec.id}', '${table.id}')" class="text-xs bg-slate-100 px-2.5 py-1.5 rounded-lg border">+ Ligne</button>
+            <button onclick="addTableColumn('${sec.id}', '${table.id}')" class="text-xs bg-slate-100 px-2.5 py-1.5 rounded-lg border">+ Col</button>
+            <button onclick="deleteTable('${sec.id}', '${table.id}')" class="text-xs text-slate-400 border px-2.5 py-1.5 rounded-lg hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>
+        <div class="w-full overflow-x-auto border border-slate-200 rounded-xl"><table class="w-full text-left border-collapse"><thead><tr>${headersHtml}</tr></thead><tbody>${rowsHtml}</tbody></table></div>
       `;
-      container.appendChild(card);
+      return wrapModuleDraggable('tbl_' + table.id, content);
     }
-    
-    function addAgendaSlot(secId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (!sec) return;
-      sec.timeline.push({ id: 't_' + Date.now(), time: "08:00", activity: "Nouvel événement" });
-      saveData(); renderActiveSection();
+    function addNativeTable(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.tables.push({ id: 'tbl_' + Date.now(), title: "Nouveau Tableau", headers: ["Col 1", "Col 2", "Col 3"], rows: [["", "", ""]] }); saveData(); renderActiveSection(); } }
+    function updateTableTitle(sId, tId, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.title = v; saveData(); } }
+    function updateTableHeader(sId, tId, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.headers[c] = v; saveData(); } }
+    function updateTableCell(sId, tId, r, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.rows[r][c] = v; saveData(); } }
+    function addTableRow(sId, tId) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.rows.push(new Array(t.headers.length).fill("")); saveData(); renderActiveSection(); } }
+    function addTableColumn(sId, tId) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.headers.push("Nouvelle"); t.rows.forEach(r => r.push("")); saveData(); renderActiveSection(); } }
+    function deleteTableRow(sId, tId, r) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.rows.splice(r, 1); saveData(); renderActiveSection(); } }
+    function deleteTable(sId, tId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.tables = s.tables.filter(x => x.id !== tId); saveData(); renderActiveSection(); } }
+
+    // 7. GOOGLE SHEETS
+    function generateSheetHtml(sec, sheet) {
+      const iframeUrl = sheet.url.includes('?') ? sheet.url + '&rm=minimal' : sheet.url + '?rm=minimal';
+      const content = `
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3 pr-6 mb-4">
+          <div class="flex-1 flex items-center gap-2">
+            <i class="fa-brands fa-google text-emerald-600"></i>
+            <input type="text" value="${sheet.title || ''}" placeholder="Titre Google Sheets..." onchange="updateSheetTitle('${sec.id}', '${sheet.id}', this.value)" class="font-bold text-slate-800 text-sm bg-transparent focus:bg-slate-50 w-full sm:w-1/2 rounded px-1">
+          </div>
+          <div class="flex gap-2">
+            <a href="${sheet.url}" target="_blank" class="text-xs bg-slate-100 px-2.5 py-1.5 rounded-lg border"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ouvrir</a>
+            <button onclick="deleteSheet('${sec.id}', '${sheet.id}')" class="text-xs text-slate-400 border px-2.5 py-1.5 rounded-lg hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>
+        <div class="w-full h-[400px] border border-slate-200 rounded-xl overflow-hidden relative"><iframe src="${iframeUrl}" class="w-full h-full absolute inset-0"></iframe></div>
+      `;
+      return wrapModuleDraggable('sht_' + sheet.id, content);
     }
-    function updateAgendaItem(secId, itemId, field, val) {
-      const sec = appData.sections.find(s => s.id === secId);
-      const item = sec?.timeline.find(t => t.id === itemId);
-      if (item) { item[field] = val; saveData(); }
+    function updateSheetTitle(sId, shId, v) { const s = appData.sections.find(x => x.id === sId)?.sheets.find(x => x.id === shId); if(s) { s.title = v; saveData(); } }
+    function deleteSheet(sId, shId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.sheets = s.sheets.filter(x => x.id !== shId); saveData(); renderActiveSection(); } }
+
+    // 8. CONTACTS LOCAUX, IMAGES, PIÈCES JOINTES (Simplifiés pour l'espace)
+    function generateLocalContactsHtml(sec) {
+      let rows = '';
+      sec.localContacts.forEach(c => {
+        rows += `<tr>
+          <td class="p-2"><input type="text" value="${c.name || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'name', this.value)" class="bg-transparent w-full font-bold"></td>
+          <td class="p-2"><input type="text" value="${c.role || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'role', this.value)" class="bg-transparent w-full"></td>
+          <td class="p-2"><input type="text" value="${c.phone || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'phone', this.value)" class="bg-transparent w-full"></td>
+          <td class="p-2 text-right"><button onclick="deleteLocalContact('${sec.id}', '${c.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button></td>
+        </tr>`;
+      });
+      const content = `<div class="border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-indigo-500"><i class="fa-solid fa-users"></i> Contacts Locaux</h3></div><table class="w-full text-left text-xs">${rows}</table>`;
+      return wrapModuleDraggable('mod_local_contacts', content);
     }
-    function deleteAgendaItem(secId, itemId) {
-      const sec = appData.sections.find(s => s.id === secId);
-      if (sec) { sec.timeline = sec.timeline.filter(t => t.id !== itemId); saveData(); renderActiveSection(); }
+    function addLocalContact(sId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.localContacts.push({ id: 'lc_' + Date.now(), name: "Nouveau", role: "", phone: "", email: ""}); saveData(); renderActiveSection(); } }
+    function updateLocalContactField(sId, cId, f, v) { const c = appData.sections.find(x => x.id === sId)?.localContacts.find(x => x.id === cId); if(c) { c[f] = v; saveData(); } }
+    function deleteLocalContact(sId, cId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.localContacts = s.localContacts.filter(x => x.id !== cId); saveData(); renderActiveSection(); } }
+
+    function generateImagesHtml(sec) {
+      let g = ''; sec.images.forEach(img => g += `<div class="relative group aspect-video bg-slate-100 rounded-xl overflow-hidden"><img src="${img.dataUrl}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3"><button onclick="deleteImage('${sec.id}', '${img.id}')" class="bg-rose-500 text-white p-2 rounded-full"><i class="fa-solid fa-trash"></i></button></div></div>`);
+      return wrapModuleDraggable('mod_images', `<div class="border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-blue-500"><i class="fa-solid fa-image"></i> Images</h3></div><div class="grid grid-cols-2 md:grid-cols-3 gap-3">${g}</div>`);
     }
+    function uploadImage(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { s.images.push({id: 'img_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); }
+    function deleteImage(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.images = s.images.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
+
+    function generateAttachmentsHtml(sec) {
+      let l = ''; sec.attachments.forEach(att => l += `<div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-xs"><span>${att.name}</span> <button onclick="deleteAttachment('${sec.id}', '${att.id}')" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></div>`);
+      return wrapModuleDraggable('mod_attachments', `<div class="border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-purple-500"><i class="fa-solid fa-paperclip"></i> Pièces Jointes</h3></div><div class="grid gap-2">${l}</div>`);
+    }
+    function uploadAttachment(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { s.attachments.push({id: 'att_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); }
+    function deleteAttachment(sId, aId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.attachments = s.attachments.filter(x => x.id !== aId); saveData(); renderActiveSection(); } }
 
 
-    // -- UTILS GLOBALES --
-    function addNewCustomSectionPrompt() {
-      const title = prompt("Nom de la nouvelle section :");
-      if (title) {
-        appData.sections.push({
-          id: 'sec_' + Date.now(), title: title, type: "standard",
-          tasks: [], stickyNotes: [], timeline: [], sheets: [], tables: [], localContacts: [], images: [], attachments: []
-        });
-        saveData(); renderSidebar();
+    // --- MODAL RECAPITULATIF CONTACT ---
+    function openRecapModal() {
+      const select = document.getElementById('recap-contact-select');
+      select.innerHTML = '<option value="">-- Choisir un contact --</option>';
+      
+      const allContacts = [];
+      appData.contacts.forEach(c => allContacts.push({id: c.id, name: c.name, type: 'Global', info: c.org || c.role || ''}));
+      appData.sections.forEach(s => {
+        if(s.localContacts) s.localContacts.forEach(c => allContacts.push({id: c.id, name: c.name, type: `Section: ${s.title}`, info: c.role || ''}));
+      });
+
+      const uniqueContacts = Array.from(new Map(allContacts.map(item => [item.id, item])).values());
+      uniqueContacts.sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
+        select.innerHTML += `<option value="${c.id}">${c.name} (${c.type})</option>`;
+      });
+
+      document.getElementById('recap-modal').classList.remove('hidden');
+      document.getElementById('recap-modal').classList.add('flex');
+      updateRecapView();
+    }
+
+    function closeRecapModal() {
+      document.getElementById('recap-modal').classList.add('hidden');
+      document.getElementById('recap-modal').classList.remove('flex');
+    }
+
+    function updateRecapView() {
+      const contactId = document.getElementById('recap-contact-select').value;
+      const contentArea = document.getElementById('recap-content-area');
+      
+      if (!contactId) {
+        contentArea.innerHTML = '<div class="text-center text-slate-400 text-sm py-10 italic">Sélectionnez un contact pour voir ses missions.</div>';
+        return;
       }
+
+      let html = '';
+      let missionCount = 0;
+
+      appData.sections.forEach(sec => {
+        const assignedTasks = (sec.tasks || []).filter(t => t.resp === contactId);
+        const assignedTimeline = (sec.timeline || []).filter(t => t.resp === contactId);
+
+        if (assignedTasks.length > 0 || assignedTimeline.length > 0) {
+          html += `<div class="mb-4"><h4 class="font-bold text-sm text-slate-700 mb-2 border-b border-slate-200 pb-1">${sec.title}</h4>`;
+          
+          if (assignedTimeline.length > 0) {
+            html += `<ul class="space-y-2 mb-3">`;
+            assignedTimeline.forEach(t => {
+              missionCount++;
+              html += `<li class="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs"><span class="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">${t.time || 'Heure non définie'}</span><span class="font-medium text-slate-800">${t.activity || 'Activité non définie'}</span></li>`;
+            });
+            html += `</ul>`;
+          }
+
+          if (assignedTasks.length > 0) {
+            html += `<ul class="space-y-2">`;
+            assignedTasks.forEach(t => {
+              missionCount++;
+              const color = t.status === 'Validé' ? 'text-emerald-600' : (t.status === 'En cours' ? 'text-amber-600' : 'text-slate-500');
+              html += `<li class="flex flex-col sm:flex-row sm:items-center gap-2 bg-white p-3 rounded-lg border border-slate-200 shadow-sm text-xs"><div class="flex-1 font-medium text-slate-800"><i class="fa-solid fa-list-check text-slate-400 mr-2"></i>${t.name || 'Tâche sans nom'}</div><div class="font-bold ${color}">${t.status || 'À faire'}</div><div class="text-slate-500"><i class="fa-regular fa-calendar mr-1"></i>${t.date || '-'}</div></li>`;
+            });
+            html += `</ul>`;
+          }
+          html += `</div>`;
+        }
+      });
+
+      if (missionCount === 0) {
+        html = `<div class="text-center text-slate-400 text-sm py-10 italic">Aucune tâche ni mission agenda assignée à ce contact.</div>`;
+      }
+
+      contentArea.innerHTML = html;
     }
 
     window.onload = initAppData;
