@@ -174,7 +174,7 @@
       });
     }
 
-    // Sécurisation et standardisation de TOUS les tableaux de chaque section
+    // Sécurisation et standardisation
     function sanitizeData(data) {
       if (!data.sections) data.sections = [];
       if (!Array.isArray(data.sections)) data.sections = Object.values(data.sections);
@@ -190,9 +190,7 @@
           delete sec.sheetUrl;
         }
 
-        // Tableaux (Native grids) - NOUVEAU
         if (!sec.tables) sec.tables = []; else sec.tables = Object.values(sec.tables);
-
         if (!sec.tasks) sec.tasks = []; else sec.tasks = Object.values(sec.tasks);
         if (!sec.stickyNotes) sec.stickyNotes = []; else sec.stickyNotes = Object.values(sec.stickyNotes);
         if (!sec.timeline) sec.timeline = []; else sec.timeline = Object.values(sec.timeline);
@@ -257,7 +255,6 @@
 
       container.innerHTML = '';
 
-      // --- HEADER DE SECTION AVEC LA BOÎTE À OUTILS UNIVERSELLE ---
       const headerBox = document.createElement('div');
       headerBox.className = 'bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col gap-4';
       
@@ -286,7 +283,6 @@
             <i class="fa-solid fa-user-plus"></i> Contact
           </button>
 
-          <!-- NOUVEAU BOUTON TABLEAU INTEGRE -->
           <button onclick="addNativeTable('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
             <i class="fa-solid fa-table"></i> Tableau Intégré
           </button>
@@ -308,17 +304,12 @@
       `;
       container.appendChild(headerBox);
 
-      // --- RENDU DYNAMIQUE DES MODULES ---
-      
+      // RENDU DYNAMIQUE
       if (sec.type === 'trace_admin') renderMapModule(container, sec);
       if (sec.type === 'contacts') renderGlobalContactsModule(container);
 
-      // Le module de tableau natif
       if (sec.tables && sec.tables.length > 0) renderTablesModule(container, sec);
-      
-      // On garde l'affichage des anciens Google Sheets existants
       if (sec.sheets && sec.sheets.length > 0) renderSheetsModule(container, sec);
-      
       if (sec.timeline && sec.timeline.length > 0) renderAgendaModule(container, sec);
       if (sec.tasks && sec.tasks.length > 0) renderTasksList(container, sec);
       if (sec.localContacts && sec.localContacts.length > 0) renderLocalContactsModule(container, sec);
@@ -326,7 +317,6 @@
       if (sec.attachments && sec.attachments.length > 0) renderAttachmentsModule(container, sec);
       if (sec.stickyNotes && sec.stickyNotes.length > 0) renderStickyNotesModule(container, sec);
     }
-
 
     // --- FONCTIONS SECTION ---
     function renameSection(secId) {
@@ -353,7 +343,153 @@
       }
     }
 
-    // --- NOUVEAU MODULE : TABLEAUX NATIFS INTÉGRÉS (Remplaçant du prompt Google Sheets) ---
+
+    // --- MODULE CARTE GPX (RESTAURÉ) ---
+    function handleGPXUpload(event, secId) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const sec = appData.sections.find(s => s.id === secId);
+        if (sec) {
+          sec.gpxTrack = e.target.result;
+          saveData();
+          displayParsedGPX(e.target.result);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function parseGPXText(gpxXmlText) {
+      try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(gpxXmlText, "text/xml");
+        const points = [];
+        const elements = xmlDoc.querySelectorAll("trkpt, wpt, rtept");
+        elements.forEach(pt => {
+          const lat = parseFloat(pt.getAttribute("lat"));
+          const lon = parseFloat(pt.getAttribute("lon"));
+          const eleNode = pt.querySelector("ele");
+          const ele = eleNode ? parseFloat(eleNode.textContent) : 0;
+          if (!isNaN(lat) && !isNaN(lon)) { points.push({ lat, lon, ele }); }
+        });
+        return points;
+      } catch(err) { return []; }
+    }
+
+    function calculateHaversineDistance(p1, p2) {
+      const R = 6371000;
+      const rad = Math.PI / 180;
+      const dLat = (p2.lat - p1.lat) * rad;
+      const dLon = (p2.lon - p1.lon) * rad;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(p1.lat * rad) * Math.cos(p2.lat * rad) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    }
+
+    function calculateGPXStats(points) {
+      if (!points || points.length < 2) return { distanceKm: 0, eleGain: 0 };
+      let totalDist = 0, totalGain = 0;
+      for (let i = 1; i < points.length; i++) {
+        totalDist += calculateHaversineDistance(points[i-1], points[i]);
+        const eleDiff = points[i].ele - points[i-1].ele;
+        if (eleDiff > 0.5) totalGain += eleDiff;
+      }
+      return { distanceKm: (totalDist / 1000).toFixed(2), eleGain: Math.round(totalGain) };
+    }
+
+    function displayParsedGPX(gpxXmlText) {
+      const points = parseGPXText(gpxXmlText);
+      if (!points || points.length === 0) return;
+      const latLngs = points.map(p => [p.lat, p.lon]);
+
+      if (leafletMap) {
+        if (leafletPolyline) leafletMap.removeLayer(leafletPolyline);
+        leafletPolyline = L.polyline(latLngs, { color: '#16a34a', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(leafletMap);
+        leafletMap.fitBounds(leafletPolyline.getBounds(), { padding: [30, 30] });
+        leafletMap.invalidateSize();
+      }
+
+      const stats = calculateGPXStats(points);
+      
+      const distEl = document.getElementById('gpx-dist-val');
+      const eleEl = document.getElementById('gpx-ele-val');
+      const ptsEl = document.getElementById('gpx-pts-val');
+      const statEl = document.getElementById('gpx-status-val');
+
+      if(distEl) distEl.innerText = `${stats.distanceKm} km`;
+      if(eleEl) eleEl.innerText = `+${stats.eleGain} m`;
+      if(ptsEl) ptsEl.innerText = points.length;
+      if(statEl) {
+          statEl.innerText = "Tracé Chargé";
+          statEl.className = "text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-0.5";
+      }
+    }
+
+    function renderMapModule(container, sec) {
+      const mapCard = document.createElement('div');
+      mapCard.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 space-y-4';
+      mapCard.innerHTML = `
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-map text-emerald-600"></i> Carte Interactive & Visualiseur GPX
+            </h3>
+            <p class="text-xs text-slate-500">Choisissez la vue Satellite ou Plan en haut à droite.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 shadow-sm transition">
+              <i class="fa-solid fa-file-code"></i> Charger Fichier GPX
+              <input type="file" onchange="handleGPXUpload(event, '${sec.id}')" accept=".gpx" class="hidden">
+            </label>
+          </div>
+        </div>
+
+        <div id="gpx-stats-bar" class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center text-xs">
+          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Distance</span><span id="gpx-dist-val" class="text-base font-extrabold text-emerald-700">-- km</span></div>
+          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Dénivelé (D+)</span><span id="gpx-ele-val" class="text-base font-extrabold text-indigo-700">-- m</span></div>
+          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Points</span><span id="gpx-pts-val" class="text-base font-bold text-slate-700">--</span></div>
+          <div><span class="text-slate-400 block text-[10px] uppercase font-bold">Statut</span><span id="gpx-status-val" class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full inline-block mt-0.5">En attente</span></div>
+        </div>
+
+        <div id="gpx-map"></div>
+      `;
+      container.appendChild(mapCard);
+
+      setTimeout(() => {
+        try {
+          if (leafletMap) { leafletMap.remove(); }
+          
+          leafletMap = L.map('gpx-map').setView([43.4633, -1.4519], 13);
+
+          const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+          });
+
+          const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 18,
+            attribution: 'Tiles &copy; Esri'
+          });
+
+          osmStandard.addTo(leafletMap);
+
+          L.control.layers({
+            "🗺️ Plan (OpenStreetMap)": osmStandard,
+            "🛰️ Satellite (Esri)": esriSatellite
+          }, null, { position: 'topright' }).addTo(leafletMap);
+
+          leafletMap.invalidateSize();
+
+          // LOAD SAVED GPX
+          if (sec.gpxTrack) displayParsedGPX(sec.gpxTrack);
+        } catch(e) {
+          console.error("Erreur d'affichage de la carte :", e);
+        }
+      }, 150);
+    }
+
+
+    // --- MODULE TABLEAUX NATIFS INTÉGRÉS ---
     function addNativeTable(secId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
@@ -361,9 +497,7 @@
         id: 'tbl_' + Date.now(),
         title: "Nouveau Tableau",
         headers: ["Colonne 1", "Colonne 2", "Colonne 3"],
-        rows: [
-          ["", "", ""]
-        ]
+        rows: [ ["", "", ""] ]
       });
       saveData();
       renderActiveSection();
@@ -441,7 +575,6 @@
             </th>
           `;
         });
-        // Colonne d'action (Vide dans l'en-tête)
         headersHtml += `<th class="w-10 bg-slate-100 border-l border-slate-200"></th>`;
 
         let rowsHtml = '';
@@ -454,7 +587,6 @@
               </td>
             `;
           });
-          // Bouton suppression de ligne
           cellsHtml += `
             <td class="p-0 border-b border-l border-slate-200 text-center bg-slate-50">
               <button onclick="deleteTableRow('${sec.id}', '${table.id}', ${rowIndex})" class="text-slate-400 hover:text-rose-500 transition px-2 py-1"><i class="fa-solid fa-trash-can text[10px]"></i></button>
@@ -492,7 +624,8 @@
       });
     }
 
-    // --- MODULE ANCIENS GOOGLE SHEETS (Pour la compatibilité de l'existant) ---
+
+    // --- MODULE ANCIENS GOOGLE SHEETS (Héritage) ---
     function updateSheetTitle(secId, sheetId, newTitle) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
@@ -716,7 +849,7 @@
     }
 
 
-    // --- MODULE GLOBAL CONTACTS (Legacy, pour Répertoire global) ---
+    // --- MODULE GLOBAL CONTACTS (Legacy) ---
     function renderGlobalContactsModule(container) {
       const card = document.createElement('div');
       card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
@@ -778,7 +911,7 @@
     }
 
 
-    // --- SELECTION DES RESPONSABLES DANS LES TACHES (Fusion Global + Local) ---
+    // --- SELECTION DES RESPONSABLES DANS LES TACHES ---
     function getContactOptionsHtml(selectedId, secId) {
       let html = `<option value="">-- Non assigné --</option>`;
       
@@ -950,28 +1083,6 @@
       if (sec) { sec.timeline = sec.timeline.filter(t => t.id !== itemId); saveData(); renderActiveSection(); }
     }
 
-
-    // --- MAP LEGACY ---
-    function renderMapModule(container, sec) {
-      const mapCard = document.createElement('div');
-      mapCard.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 space-y-4';
-      mapCard.innerHTML = `
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
-          <div><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-map text-emerald-600"></i> Carte Interactive GPX</h3></div>
-          <div class="flex items-center gap-2"><label class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer">Charger GPX <input type="file" onchange="handleGPXUpload(event, '${sec.id}')" accept=".gpx" class="hidden"></label></div>
-        </div>
-        <div id="gpx-map"></div>
-      `;
-      container.appendChild(mapCard);
-      setTimeout(() => {
-        try {
-          if (leafletMap) leafletMap.remove();
-          leafletMap = L.map('gpx-map').setView([43.4633, -1.4519], 13);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(leafletMap);
-          leafletMap.invalidateSize();
-        } catch(e){}
-      }, 150);
-    }
 
     // -- UTILS GLOBALES --
     function addNewCustomSectionPrompt() {
