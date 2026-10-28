@@ -33,6 +33,8 @@
     .drag-over { border: 2px dashed #6366f1 !important; background-color: #f0f3ff !important; }
     .dragging { opacity: 0.4; }
     #gpx-map { height: 450px; width: 100%; border-radius: 0.75rem; z-index: 10; }
+    /* Cache l'outline par défaut sur les inputs de tableaux */
+    input.cell-input:focus { outline: 2px solid #10b981; outline-offset: -2px; z-index: 10; position: relative; }
   </style>
 </head>
 <body class="h-full font-sans text-slate-800 bg-slate-100 flex flex-col antialiased">
@@ -182,20 +184,20 @@
           sec.type = 'contacts';
         }
 
-        // Migration de l'ancienne variable sheetUrl vers le tableau multi-sheets
         if (sec.sheetUrl) {
           if (!sec.sheets) sec.sheets = [];
-          sec.sheets.push({ id: 'sh_migrated_' + Date.now(), url: sec.sheetUrl, title: "Fichier Google Sheets" });
+          sec.sheets.push({ id: 'sh_migrated_' + Date.now(), url: sec.sheetUrl, title: "Ancien Fichier Google Sheets" });
           delete sec.sheetUrl;
         }
 
-        // Initialisation de toutes les possibilités de modules pour chaque section
+        // Tableaux (Native grids) - NOUVEAU
+        if (!sec.tables) sec.tables = []; else sec.tables = Object.values(sec.tables);
+
         if (!sec.tasks) sec.tasks = []; else sec.tasks = Object.values(sec.tasks);
         if (!sec.stickyNotes) sec.stickyNotes = []; else sec.stickyNotes = Object.values(sec.stickyNotes);
         if (!sec.timeline) sec.timeline = []; else sec.timeline = Object.values(sec.timeline);
         if (!sec.sheets) sec.sheets = []; else sec.sheets = Object.values(sec.sheets);
         
-        // Sécuriser les titres des sheets existants
         sec.sheets.forEach(sh => {
           if (sh.title === undefined) sh.title = "Fichier Google Sheets";
         });
@@ -284,8 +286,9 @@
             <i class="fa-solid fa-user-plus"></i> Contact
           </button>
 
-          <button onclick="addSheet('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-            <i class="fa-solid fa-table"></i> Google Sheets
+          <!-- NOUVEAU BOUTON TABLEAU INTEGRE -->
+          <button onclick="addNativeTable('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-table"></i> Tableau Intégré
           </button>
 
           <label class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer">
@@ -307,14 +310,15 @@
 
       // --- RENDU DYNAMIQUE DES MODULES ---
       
-      // Legacy Map (Tracé)
       if (sec.type === 'trace_admin') renderMapModule(container, sec);
-      
-      // Legacy Contacts Globaux (Répertoire global)
       if (sec.type === 'contacts') renderGlobalContactsModule(container);
 
-      // Nouveaux modules dynamiques de la section
+      // Le module de tableau natif
+      if (sec.tables && sec.tables.length > 0) renderTablesModule(container, sec);
+      
+      // On garde l'affichage des anciens Google Sheets existants
       if (sec.sheets && sec.sheets.length > 0) renderSheetsModule(container, sec);
+      
       if (sec.timeline && sec.timeline.length > 0) renderAgendaModule(container, sec);
       if (sec.tasks && sec.tasks.length > 0) renderTasksList(container, sec);
       if (sec.localContacts && sec.localContacts.length > 0) renderLocalContactsModule(container, sec);
@@ -349,19 +353,146 @@
       }
     }
 
-
-    // --- MODULE GOOGLE SHEETS MULTIPLES ---
-    function addSheet(secId) {
+    // --- NOUVEAU MODULE : TABLEAUX NATIFS INTÉGRÉS (Remplaçant du prompt Google Sheets) ---
+    function addNativeTable(secId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
-      const url = prompt("Collez l'URL complète de votre fichier Google Sheets (ex: https://docs.google.com/spreadsheets/d/.../edit) :");
-      if (url && url.includes("http")) {
-        sec.sheets.push({ id: 'sh_' + Date.now(), url: url.trim(), title: "Fichier Google Sheets" });
-        saveData();
+      sec.tables.push({
+        id: 'tbl_' + Date.now(),
+        title: "Nouveau Tableau",
+        headers: ["Colonne 1", "Colonne 2", "Colonne 3"],
+        rows: [
+          ["", "", ""]
+        ]
+      });
+      saveData();
+      renderActiveSection();
+    }
+
+    function updateTableTitle(secId, tableId, val) {
+      const sec = appData.sections.find(s => s.id === secId);
+      const table = sec?.tables.find(t => t.id === tableId);
+      if (table) { table.title = val; saveData(); }
+    }
+
+    function updateTableHeader(secId, tableId, colIndex, val) {
+      const sec = appData.sections.find(s => s.id === secId);
+      const table = sec?.tables.find(t => t.id === tableId);
+      if (table) { table.headers[colIndex] = val; saveData(); }
+    }
+
+    function updateTableCell(secId, tableId, rowIndex, colIndex, val) {
+      const sec = appData.sections.find(s => s.id === secId);
+      const table = sec?.tables.find(t => t.id === tableId);
+      if (table) { table.rows[rowIndex][colIndex] = val; saveData(); }
+    }
+
+    function addTableRow(secId, tableId) {
+      const sec = appData.sections.find(s => s.id === secId);
+      const table = sec?.tables.find(t => t.id === tableId);
+      if (table) {
+        const newRow = new Array(table.headers.length).fill("");
+        table.rows.push(newRow);
+        saveData(); 
         renderActiveSection();
       }
     }
 
+    function addTableColumn(secId, tableId) {
+      const sec = appData.sections.find(s => s.id === secId);
+      const table = sec?.tables.find(t => t.id === tableId);
+      if (table) {
+        table.headers.push("Nouvelle Col");
+        table.rows.forEach(row => row.push(""));
+        saveData(); 
+        renderActiveSection();
+      }
+    }
+
+    function deleteTableRow(secId, tableId, rowIndex) {
+      const sec = appData.sections.find(s => s.id === secId);
+      const table = sec?.tables.find(t => t.id === tableId);
+      if (table) {
+        table.rows.splice(rowIndex, 1);
+        saveData(); 
+        renderActiveSection();
+      }
+    }
+
+    function deleteTable(secId, tableId) {
+       const sec = appData.sections.find(s => s.id === secId);
+       if (sec) {
+         sec.tables = sec.tables.filter(t => t.id !== tableId);
+         saveData(); 
+         renderActiveSection();
+       }
+    }
+
+    function renderTablesModule(container, sec) {
+      sec.tables.forEach(table => {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6 relative group';
+
+        let headersHtml = '';
+        table.headers.forEach((h, colIndex) => {
+          headersHtml += `
+            <th class="p-0 border-r border-slate-200 bg-slate-100 min-w-[120px]">
+              <input type="text" value="${h}" onchange="updateTableHeader('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent font-bold text-slate-700 text-xs">
+            </th>
+          `;
+        });
+        // Colonne d'action (Vide dans l'en-tête)
+        headersHtml += `<th class="w-10 bg-slate-100 border-l border-slate-200"></th>`;
+
+        let rowsHtml = '';
+        table.rows.forEach((row, rowIndex) => {
+          let cellsHtml = '';
+          row.forEach((cell, colIndex) => {
+            cellsHtml += `
+              <td class="p-0 border-r border-slate-200 border-b">
+                <input type="text" value="${cell}" onchange="updateTableCell('${sec.id}', '${table.id}', ${rowIndex}, ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent text-xs text-slate-800">
+              </td>
+            `;
+          });
+          // Bouton suppression de ligne
+          cellsHtml += `
+            <td class="p-0 border-b border-l border-slate-200 text-center bg-slate-50">
+              <button onclick="deleteTableRow('${sec.id}', '${table.id}', ${rowIndex})" class="text-slate-400 hover:text-rose-500 transition px-2 py-1"><i class="fa-solid fa-trash-can text[10px]"></i></button>
+            </td>
+          `;
+          rowsHtml += `<tr class="hover:bg-slate-50 transition">${cellsHtml}</tr>`;
+        });
+
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b pb-3">
+            <div class="flex-1 flex items-center gap-2">
+              <i class="fa-solid fa-table text-emerald-600"></i>
+              <input type="text" value="${table.title || ''}" placeholder="Titre du tableau..." onchange="updateTableTitle('${sec.id}', '${table.id}', this.value)" class="font-bold text-slate-800 text-sm bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-slate-50 px-1 w-full sm:w-1/2 rounded transition">
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="addTableRow('${sec.id}', '${table.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border transition">
+                + Ligne
+              </button>
+              <button onclick="addTableColumn('${sec.id}', '${table.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border transition">
+                + Colonne
+              </button>
+              <button onclick="deleteTable('${sec.id}', '${table.id}')" class="text-xs bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 font-medium px-2.5 py-1.5 rounded-lg transition" title="Supprimer le tableau complet">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+          <div class="w-full overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="w-full text-left border-collapse">
+              <thead><tr>${headersHtml}</tr></thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // --- MODULE ANCIENS GOOGLE SHEETS (Pour la compatibilité de l'existant) ---
     function updateSheetTitle(secId, sheetId, newTitle) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
@@ -389,8 +520,8 @@
         card.innerHTML = `
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b pb-3">
             <div class="flex-1 flex items-center gap-2">
-              <i class="fa-solid fa-table text-emerald-600"></i>
-              <input type="text" value="${sheet.title || ''}" placeholder="Titre du tableau (optionnel)..." onchange="updateSheetTitle('${sec.id}', '${sheet.id}', this.value)" class="font-bold text-slate-800 text-sm bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-slate-50 px-1 w-full sm:w-1/2 rounded transition">
+              <i class="fa-brands fa-google text-emerald-600"></i>
+              <input type="text" value="${sheet.title || ''}" placeholder="Titre du fichier Google Sheets..." onchange="updateSheetTitle('${sec.id}', '${sheet.id}', this.value)" class="font-bold text-slate-800 text-sm bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-slate-50 px-1 w-full sm:w-1/2 rounded transition">
             </div>
             <div class="flex items-center gap-2">
               <a href="${sheet.url}" target="_blank" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1.5 rounded-lg border transition">
@@ -822,7 +953,6 @@
 
     // --- MAP LEGACY ---
     function renderMapModule(container, sec) {
-      // Intégration de la carte standard si type trace_admin
       const mapCard = document.createElement('div');
       mapCard.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 space-y-4';
       mapCard.innerHTML = `
@@ -849,7 +979,7 @@
       if (title) {
         appData.sections.push({
           id: 'sec_' + Date.now(), title: title, type: "standard",
-          tasks: [], stickyNotes: [], timeline: [], sheets: [], localContacts: [], images: [], attachments: []
+          tasks: [], stickyNotes: [], timeline: [], sheets: [], tables: [], localContacts: [], images: [], attachments: []
         });
         saveData(); renderSidebar();
       }
