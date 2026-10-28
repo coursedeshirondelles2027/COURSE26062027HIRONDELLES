@@ -148,6 +148,13 @@
             { id: "k19", name: "Démarchage sponsors financiers", resp: "c2", date: "2027-03-01", status: "En cours", notes: "Lots vainqueurs" }
           ],
           stickyNotes: []
+        },
+        {
+          id: "sec-contacts",
+          title: "Répertoire de Contacts",
+          icon: "fa-address-book",
+          type: "contacts",
+          stickyNotes: []
         }
       ]
     };
@@ -246,17 +253,31 @@
 
       const headerBox = document.createElement('div');
       headerBox.className = 'bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex justify-between items-center';
-      headerBox.innerHTML = `
-        <h2 class="text-xl font-bold text-slate-900">${sec.title}</h2>
-        ${sec.type !== 'agenda' ? `
+      
+      let headerActionBtn = '';
+      if (sec.type === 'contacts') {
+        headerActionBtn = `
+          <button onclick="addNewContact()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-user-plus"></i> Ajouter un contact
+          </button>
+        `;
+      } else if (sec.type !== 'agenda') {
+        headerActionBtn = `
           <button onclick="addNewTask('${sec.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-sm">
             <i class="fa-solid fa-plus"></i> Ajouter une tâche
           </button>
-        ` : ''}
+        `;
+      }
+
+      headerBox.innerHTML = `
+        <h2 class="text-xl font-bold text-slate-900">${sec.title}</h2>
+        ${headerActionBtn}
       `;
       container.appendChild(headerBox);
 
-      if (sec.type === 'agenda') {
+      if (sec.type === 'contacts') {
+        renderContactsModule(container);
+      } else if (sec.type === 'agenda') {
         renderAgendaModule(container, sec);
       } else if (sec.type === 'trace_admin') {
         renderMapModule(container, sec);
@@ -268,6 +289,92 @@
       if (sec.type !== 'agenda') {
         renderStickyNotesModule(container, sec);
       }
+    }
+
+    // --- MODULE REPERTOIRE DES CONTACTS ---
+    function renderContactsModule(container) {
+      const card = document.createElement('div');
+      card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 mb-6';
+      
+      const contacts = appData.contacts || [];
+      card.innerHTML = `
+        <div class="flex justify-between items-center border-b pb-3">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-address-book text-emerald-600"></i> Liste des Contacts (${contacts.length})
+          </h3>
+          <button onclick="addNewContact()" class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium px-2.5 py-1.5 rounded-lg border border-emerald-200">
+            + Nouveau Contact
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-700">
+            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] border-b">
+              <tr>
+                <th class="p-2.5">Nom</th>
+                <th class="p-2.5">Rôle</th>
+                <th class="p-2.5">Entité / Club</th>
+                <th class="p-2.5">Téléphone</th>
+                <th class="p-2.5">Email</th>
+                <th class="p-2.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="contacts-table-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      `;
+      container.appendChild(card);
+
+      const tbody = card.querySelector('#contacts-table-body');
+
+      if (contacts.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 italic">Aucun contact enregistré.</td></tr>`;
+        return;
+      }
+
+      contacts.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition';
+        tr.innerHTML = `
+          <td class="p-2.5 font-bold text-slate-900"><input type="text" value="${c.name || ''}" onchange="updateContactField('${c.id}', 'name', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
+          <td class="p-2.5"><input type="text" value="${c.role || ''}" onchange="updateContactField('${c.id}', 'role', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
+          <td class="p-2.5"><input type="text" value="${c.org || ''}" onchange="updateContactField('${c.id}', 'org', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
+          <td class="p-2.5"><input type="text" value="${c.phone || ''}" onchange="updateContactField('${c.id}', 'phone', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
+          <td class="p-2.5"><input type="text" value="${c.email || ''}" onchange="updateContactField('${c.id}', 'email', this.value)" class="bg-transparent border-b border-transparent focus:border-emerald-500 focus:bg-white w-full"></td>
+          <td class="p-2.5 text-right">
+            <button onclick="deleteContact('${c.id}')" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash-can"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addNewContact() {
+      if (!appData.contacts) appData.contacts = [];
+      appData.contacts.push({
+        id: 'c_' + Date.now(),
+        name: "Nouveau Contact",
+        role: "Bénévole",
+        org: "Club",
+        phone: "",
+        email: "",
+        notes: ""
+      });
+      saveData();
+      renderActiveSection();
+    }
+
+    function updateContactField(contactId, field, value) {
+      const c = appData.contacts.find(x => x.id === contactId);
+      if (c) {
+        c[field] = value;
+        saveData();
+      }
+    }
+
+    function deleteContact(contactId) {
+      appData.contacts = appData.contacts.filter(x => x.id !== contactId);
+      saveData();
+      renderActiveSection();
     }
 
     // --- MODULE D'IMPORTATION & CARTE GPX ---
