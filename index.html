@@ -293,9 +293,22 @@
         `;
       }
 
+      // Titre + Boutons pour Renommer et Supprimer la section
       headerBox.innerHTML = `
-        <h2 class="text-xl font-bold text-slate-900">${sec.title}</h2>
-        ${headerActionBtn}
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-bold text-slate-900">${sec.title}</h2>
+          <div class="flex items-center gap-2">
+            <button onclick="renameSection('${sec.id}')" class="text-slate-400 hover:text-emerald-600 transition" title="Renommer la section">
+              <i class="fa-solid fa-pen text-sm"></i>
+            </button>
+            <button onclick="deleteSection('${sec.id}')" class="text-slate-400 hover:text-rose-600 transition" title="Supprimer la section">
+              <i class="fa-solid fa-trash-can text-sm"></i>
+            </button>
+          </div>
+        </div>
+        <div>
+          ${headerActionBtn}
+        </div>
       `;
       container.appendChild(headerBox);
 
@@ -307,7 +320,6 @@
         renderMapModule(container, sec);
         renderTasksList(container, sec);
       } else {
-        // Affiche le module Sheets si un lien est présent
         if (sec.sheetUrl) {
           renderSheetModule(container, sec);
         }
@@ -316,6 +328,37 @@
 
       if (sec.type !== 'agenda') {
         renderStickyNotesModule(container, sec);
+      }
+    }
+
+    // --- FONCTIONS RENOMMER & SUPPRIMER UNE SECTION ---
+    function renameSection(secId) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
+      const newTitle = prompt("Nouveau nom de la section :", sec.title);
+      if (newTitle && newTitle.trim() !== "") {
+        sec.title = newTitle.trim();
+        saveData();
+        renderSidebar();
+        renderActiveSection();
+      }
+    }
+
+    function deleteSection(secId) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (!sec) return;
+      if (confirm(`Es-tu sûr de vouloir supprimer la section "${sec.title}" et tout son contenu ?`)) {
+        appData.sections = appData.sections.filter(s => s.id !== secId);
+        if (activeSectionId === secId) {
+          activeSectionId = appData.sections.length > 0 ? appData.sections[0].id : null;
+        }
+        saveData();
+        renderSidebar();
+        if (activeSectionId) {
+          renderActiveSection();
+        } else {
+          document.getElementById('main-content-viewport').innerHTML = '<p class="text-slate-500 italic p-6">Aucune section disponible.</p>';
+        }
       }
     }
 
