@@ -188,10 +188,17 @@
             if (!Array.isArray(t.rowColors)) t.rowColors = Object.values(t.rowColors);
           });
         }
-        if (!sec.tasks) sec.tasks = []; else { sec.tasks = Object.values(sec.tasks); sec.tasks.forEach(t => { if (!t.resps) { t.resps = t.resp ? [t.resp] : []; delete t.resp; }}); }
+        if (!sec.tasks) sec.tasks = []; else { 
+          sec.tasks = Object.values(sec.tasks); 
+          sec.tasks.forEach(t => { 
+            if (!t.resps) { t.resps = t.resp ? [t.resp] : []; delete t.resp; }
+            if (t.note === undefined) t.note = "";
+          }); 
+        }
         if (!sec.stickyNotes) sec.stickyNotes = []; else sec.stickyNotes = Object.values(sec.stickyNotes);
         if (!sec.timeline) sec.timeline = []; else sec.timeline = Object.values(sec.timeline);
         if (!sec.sheets) sec.sheets = []; else sec.sheets = Object.values(sec.sheets);
+        if (!sec.links) sec.links = []; else sec.links = Object.values(sec.links);
         if (!sec.localContacts) sec.localContacts = []; else sec.localContacts = Object.values(sec.localContacts);
         if (!sec.images) sec.images = []; else sec.images = Object.values(sec.images);
         if (!sec.attachments) sec.attachments = []; else sec.attachments = Object.values(sec.attachments);
@@ -302,8 +309,9 @@
       if (sec.gpxTracks && sec.gpxTracks.some(t => checkMatch(t.name))) return true;
       if (sec.tables && sec.tables.some(t => checkMatch(t.title) || t.headers.some(h => checkMatch(h)) || t.rows.some(r => r.some(c => checkMatch(c))))) return true;
       if (sec.sheets && sec.sheets.some(s => checkMatch(s.title))) return true;
+      if (sec.links && sec.links.some(l => checkMatch(l.title) || checkMatch(l.url))) return true;
       if (sec.timeline && sec.timeline.some(item => checkMatch(item.activity) || checkMatch(item.time))) return true;
-      if (sec.tasks && sec.tasks.some(task => checkMatch(task.name) || checkMatch(task.status))) return true;
+      if (sec.tasks && sec.tasks.some(task => checkMatch(task.name) || checkMatch(task.status) || checkMatch(task.note))) return true;
       if (sec.localContacts && sec.localContacts.some(c => checkMatch(c.name) || checkMatch(c.emplacement) || checkMatch(c.phone))) return true;
       if (sec.images && sec.images.some(img => checkMatch(img.name))) return true;
       if (sec.attachments && sec.attachments.some(att => checkMatch(att.name))) return true;
@@ -368,6 +376,7 @@
           <button onclick="addStickyNote('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-note-sticky"></i> Note</button>
           <button onclick="addLocalContact('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-user-plus"></i> Bénévoles / Staff</button>
           <button onclick="addNativeTable('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-green-50 hover:text-green-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-table"></i> Tableau Intégré</button>
+          <button onclick="addNewLink('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-sky-50 hover:text-sky-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-link"></i> Lien</button>
           <label class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-blue-50 hover:text-blue-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer"><i class="fa-solid fa-image"></i> Image<input type="file" accept="image/*" onchange="uploadImage(event, '${sec.id}')" class="hidden"></label>
           <label class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-purple-50 hover:text-purple-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer"><i class="fa-solid fa-paperclip"></i> Pièce Jointe<input type="file" onchange="uploadAttachment(event, '${sec.id}')" class="hidden"></label>
           <button onclick="addAgendaSlot('${sec.id}')" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:text-rose-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"><i class="fa-solid fa-clock"></i> Planning</button>
@@ -404,6 +413,10 @@
         if (!globalSearchQuery || checkMatch(s.title)) renderedModules['sht_' + s.id] = generateSheetHtml(sec, s);
       });
 
+      sec.links.forEach(l => {
+        if (!globalSearchQuery || checkMatch(l.title) || checkMatch(l.url)) renderedModules['lnk_' + l.id] = generateLinkHtml(sec, l);
+      });
+
       if (sec.timeline.length > 0) {
         const agendaTitle = sec.moduleTitles?.['mod_agenda'] || 'Chronologie';
         const matchAgenda = !globalSearchQuery || agendaTitle.toLowerCase().includes(globalSearchQuery) || sec.timeline.some(item => checkMatch(item.activity) || checkMatch(item.time));
@@ -412,7 +425,7 @@
 
       if (sec.tasks.length > 0) {
         const tasksTitle = sec.moduleTitles?.['mod_tasks'] || 'Tâches';
-        const matchTasks = !globalSearchQuery || tasksTitle.toLowerCase().includes(globalSearchQuery) || sec.tasks.some(task => checkMatch(task.name) || checkMatch(task.status));
+        const matchTasks = !globalSearchQuery || tasksTitle.toLowerCase().includes(globalSearchQuery) || sec.tasks.some(task => checkMatch(task.name) || checkMatch(task.status) || checkMatch(task.note));
         if (matchTasks) renderedModules['mod_tasks'] = generateTasksHtml(sec);
       }
 
@@ -477,7 +490,7 @@
       const title = prompt("Nom de la nouvelle section :");
       if (title) {
         const newId = 'sec_' + Date.now();
-        appData.sections.push({ id: newId, title: title, type: "standard", layout: [], tasks: [], stickyNotes: [], timeline: [], sheets: [], tables: [], localContacts: [], images: [], attachments: [], gpxTracks: [], moduleTitles: {} });
+        appData.sections.push({ id: newId, title: title, type: "standard", layout: [], tasks: [], stickyNotes: [], timeline: [], sheets: [], links: [], tables: [], localContacts: [], images: [], attachments: [], gpxTracks: [], moduleTitles: {} });
         if (!activeSectionId) activeSectionId = newId;
         saveData(); renderSidebar(); renderActiveSection();
       }
@@ -516,6 +529,49 @@
     function addStickyNote(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.stickyNotes.push({ id: 'sn_' + Date.now(), title: "Nouvelle Note", content: "" }); saveData(); renderActiveSection(); } }
     function updateStickyNote(sId, nId, f, v) { const s = appData.sections.find(x => x.id === sId); const n = s?.stickyNotes.find(x => x.id === nId); if(n) { n[f] = v; saveData(); } }
     function deleteStickyNote(sId, nId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.stickyNotes = s.stickyNotes.filter(x => x.id !== nId); saveData(); renderActiveSection(); } }
+
+    // --- MODULE LIEN AVEC PRÉVISUALISATION ---
+    function generateLinkHtml(sec, link) {
+      let embedUrl = link.url;
+      // Nettoyage ou formatage si nécessaire pour les iframes
+      return `
+        <div class="flex justify-between items-center border-b pb-3 pr-6 mb-4">
+          <div class="flex-1 flex items-center gap-2">
+            <i class="fa-solid fa-link text-sky-500"></i>
+            <input type="text" value="${link.title || ''}" placeholder="Titre du lien..." onchange="updateLinkField('${sec.id}', '${link.id}', 'title', this.value)" class="font-bold text-sm bg-transparent focus:bg-slate-50 w-full rounded outline-none px-1">
+          </div>
+          <button onclick="deleteLink('${sec.id}', '${link.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+        <div class="mb-3">
+          <input type="url" value="${link.url || ''}" placeholder="https://exemple.com" onchange="updateLinkField('${sec.id}', '${link.id}', 'url', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:bg-white focus:border-sky-500">
+        </div>
+        <div class="w-full h-[350px] border border-slate-200 rounded-xl overflow-hidden relative bg-slate-50 flex flex-col">
+          <div class="bg-white px-3 py-1.5 border-b border-slate-200 flex justify-between items-center text-[11px] text-slate-500 shrink-0">
+            <span class="truncate"><i class="fa-solid fa-globe mr-1"></i> ${link.url || 'Aucune URL'}</span>
+            <a href="${link.url || '#'}" target="_blank" class="text-sky-600 hover:underline flex items-center gap-1 shrink-0"><i class="fa-solid fa-external-link-alt text-[10px]"></i> Ouvrir</a>
+          </div>
+          <div class="flex-1 relative">
+            ${link.url ? `<iframe src="${link.url}" class="w-full h-full absolute inset-0 border-0"></iframe>` : `<div class="flex items-center justify-center h-full text-slate-400 text-xs italic">Entrez une URL valide ci-dessus pour prévisualiser</div>`}
+          </div>
+        </div>
+      `;
+    }
+    function addNewLink(secId) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if(sec) {
+        if(!sec.links) sec.links = [];
+        sec.links.push({ id: 'lnk_' + Date.now(), title: "Nouveau lien", url: "" });
+        saveData(); renderActiveSection();
+      }
+    }
+    function updateLinkField(sId, lId, f, v) {
+      const l = appData.sections.find(x => x.id === sId)?.links.find(x => x.id === lId);
+      if(l) { l[f] = v; saveData(); if(f==='url') renderActiveSection(); }
+    }
+    function deleteLink(sId, lId) {
+      const s = appData.sections.find(x => x.id === sId);
+      if(s) { s.links = s.links.filter(x => x.id !== lId); saveData(); renderActiveSection(); }
+    }
 
     function generateTableHtml(sec, table) {
       if (!table.headers) table.headers = ["Col 1", "Col 2"];
@@ -690,6 +746,7 @@
       let listHtml = '';
       sec.tasks.forEach(task => {
         if (!task.resps) task.resps = [];
+        if (task.note === undefined) task.note = "";
         const statusColors = { 'À faire': 'bg-slate-200 text-slate-700', 'En cours': 'bg-amber-100 text-amber-800', 'Validé': 'bg-emerald-100 text-emerald-800' };
         let assigneesHtml = '';
         task.resps.forEach((respId, rIdx) => {
@@ -699,7 +756,27 @@
         let selectOptions = `<option value="">+ Assigner...</option>`;
         getAvailableContactsForTask(sec.id).forEach(c => { if (!task.resps.includes(c.id)) selectOptions += `<option value="${c.id}">${c.name}</option>`; });
         
-        listHtml += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs"><div class="flex justify-between items-center gap-2"><input type="text" value="${task.name || ''}" onchange="updateTaskField('${sec.id}', '${task.id}', 'name', this.value)" class="font-bold text-slate-900 bg-transparent flex-1 focus:bg-white rounded px-1"><div class="flex gap-2"><select onchange="updateTaskField('${sec.id}', '${task.id}', 'status', this.value)" class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusColors[task.status || 'À faire']}"><option value="À faire" ${(task.status||'À faire') === 'À faire' ? 'selected' : ''}>À faire</option><option value="En cours" ${task.status === 'En cours' ? 'selected' : ''}>En cours</option><option value="Validé" ${task.status === 'Validé' ? 'selected' : ''}>Validé</option></select><button onclick="deleteTask('${sec.id}', '${task.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button></div></div><div class="flex flex-wrap items-center gap-1.5 pt-1">${assigneesHtml}<select onchange="addTaskAssignee('${sec.id}', '${task.id}', this.value); this.value='';" class="bg-white border rounded px-1 py-0.5 outline-none">${selectOptions}</select></div></div>`;
+        listHtml += `
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+            <div class="flex justify-between items-center gap-2">
+              <input type="text" value="${task.name || ''}" onchange="updateTaskField('${sec.id}', '${task.id}', 'name', this.value)" class="font-bold text-slate-900 bg-transparent flex-1 focus:bg-white rounded px-1">
+              <div class="flex gap-2">
+                <select onchange="updateTaskField('${sec.id}', '${task.id}', 'status', this.value)" class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusColors[task.status || 'À faire']}">
+                  <option value="À faire" ${(task.status||'À faire') === 'À faire' ? 'selected' : ''}>À faire</option>
+                  <option value="En cours" ${task.status === 'En cours' ? 'selected' : ''}>En cours</option>
+                  <option value="Validé" ${task.status === 'Validé' ? 'selected' : ''}>Validé</option>
+                </select>
+                <button onclick="deleteTask('${sec.id}', '${task.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 pt-1">
+              ${assigneesHtml}
+              <select onchange="addTaskAssignee('${sec.id}', '${task.id}', this.value); this.value='';" class="bg-white border rounded px-1 py-0.5 outline-none">${selectOptions}</select>
+            </div>
+            <div class="pt-1">
+              <input type="text" value="${task.note || ''}" placeholder="Note ou précision sur cette tâche..." onchange="updateTaskField('${sec.id}', '${task.id}', 'note', this.value)" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 outline-none focus:border-emerald-500">
+            </div>
+          </div>`;
       });
       const tasksTitle = sec.moduleTitles?.['mod_tasks'] || `Tâches (${sec.tasks.length})`;
       return `
@@ -707,7 +784,7 @@
         <div class="space-y-3">${listHtml}</div>
       `;
     }
-    function addNewTask(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.tasks.push({ id: 'k_' + Date.now(), name: "Nouvelle tâche", resps: [], date: "", status: "À faire", notes: "" }); saveData(); renderActiveSection(); } }
+    function addNewTask(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.tasks.push({ id: 'k_' + Date.now(), name: "Nouvelle tâche", resps: [], date: "", status: "À faire", note: "" }); saveData(); renderActiveSection(); } }
     function updateTaskField(sId, tId, f, v) { const s = appData.sections.find(x => x.id === sId); const t = s?.tasks.find(x => x.id === tId); if(t) { t[f] = v; saveData(); if(f==='status') renderActiveSection(); } }
     function deleteTask(sId, tId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.tasks = s.tasks.filter(x => x.id !== tId); saveData(); renderActiveSection(); } }
     function addTaskAssignee(sId, tId, contactId) { if (!contactId) return; const t = appData.sections.find(x => x.id === sId)?.tasks.find(x => x.id === tId); if (t) { if (!t.resps) t.resps = []; if (!t.resps.includes(contactId)) { t.resps.push(contactId); saveData(); renderActiveSection(); } } }
