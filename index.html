@@ -264,13 +264,13 @@
       });
     }
 
-    // --- MOTEUR DE RECHERCHE GLOBAL AMÉLIORÉ ---
+    // --- MOTEUR DE RECHERCHE ROBUSTE (DIRECT SUR LES DONNÉES) ---
     function handleGlobalSearch(query) {
       globalSearchQuery = query.trim().toLowerCase();
       renderActiveSection();
     }
 
-    function matchSearch(text) {
+    function checkMatch(text) {
       if (!globalSearchQuery) return true;
       return (text || '').toLowerCase().includes(globalSearchQuery);
     }
@@ -350,43 +350,47 @@
 
       const renderedModules = {};
       
-      if (sec.type === 'trace_admin') renderedModules['mod_map'] = generateMapModuleHtml(sec);
-      if (sec.type === 'contacts') renderedModules['mod_global_contacts'] = generateGlobalContactsHtml();
+      if (sec.type === 'trace_admin') {
+        const hasMapMatch = !globalSearchQuery || sec.gpxTracks.some(trk => checkMatch(trk.name));
+        if (hasMapMatch) renderedModules['mod_map'] = generateMapModuleHtml(sec);
+      }
+      if (sec.type === 'contacts') {
+        const hasContactMatch = !globalSearchQuery || appData.contacts.some(c => checkMatch(c.name) || checkMatch(c.org) || checkMatch(c.phone));
+        if (hasContactMatch) renderedModules['mod_global_contacts'] = generateGlobalContactsHtml();
+      }
 
       sec.tables.forEach(t => {
-        const tHtml = generateTableHtml(sec, t);
-        if (!globalSearchQuery || matchSearch(t.title) || tHtml.toLowerCase().includes(globalSearchQuery)) {
-          renderedModules['tbl_' + t.id] = tHtml;
-        }
+        const matchTable = !globalSearchQuery || checkMatch(t.title) || t.headers.some(h => checkMatch(h)) || t.rows.some(r => r.some(cell => checkMatch(cell)));
+        if (matchTable) renderedModules['tbl_' + t.id] = generateTableHtml(sec, t);
       });
+
       sec.sheets.forEach(s => {
-        if (!globalSearchQuery || matchSearch(s.title)) {
-          renderedModules['sht_' + s.id] = generateSheetHtml(sec, s);
-        }
+        if (!globalSearchQuery || checkMatch(s.title)) renderedModules['sht_' + s.id] = generateSheetHtml(sec, s);
       });
+
       if (sec.timeline.length > 0) {
-        const tHtml = generateAgendaHtml(sec);
-        if (!globalSearchQuery || tHtml.toLowerCase().includes(globalSearchQuery)) renderedModules['mod_agenda'] = tHtml;
+        const matchAgenda = !globalSearchQuery || sec.timeline.some(item => checkMatch(item.activity) || checkMatch(item.time));
+        if (matchAgenda) renderedModules['mod_agenda'] = generateAgendaHtml(sec);
       }
+
       if (sec.tasks.length > 0) {
-        const tHtml = generateTasksHtml(sec);
-        if (!globalSearchQuery || tHtml.toLowerCase().includes(globalSearchQuery)) renderedModules['mod_tasks'] = tHtml;
+        const matchTasks = !globalSearchQuery || sec.tasks.some(task => checkMatch(task.name) || checkMatch(task.status));
+        if (matchTasks) renderedModules['mod_tasks'] = generateTasksHtml(sec);
       }
+
       if (sec.localContacts.length > 0) {
-        const tHtml = generateLocalContactsHtml(sec);
-        if (!globalSearchQuery || tHtml.toLowerCase().includes(globalSearchQuery)) renderedModules['mod_local_contacts'] = tHtml;
+        const matchLocal = !globalSearchQuery || sec.localContacts.some(c => checkMatch(c.name) || checkMatch(c.emplacement) || checkMatch(c.phone));
+        if (matchLocal) renderedModules['mod_local_contacts'] = generateLocalContactsHtml(sec);
       }
+
       if (sec.images.length > 0) {
-        const imgHtml = generateImagesHtml(sec);
-        if (!globalSearchQuery || imgHtml.toLowerCase().includes(globalSearchQuery)) {
-          renderedModules['mod_images'] = imgHtml;
-        }
+        const matchImages = !globalSearchQuery || sec.images.some(img => checkMatch(img.name));
+        if (matchImages) renderedModules['mod_images'] = generateImagesHtml(sec);
       }
+
       if (sec.attachments.length > 0) {
-        const attHtml = generateAttachmentsHtml(sec);
-        if (!globalSearchQuery || attHtml.toLowerCase().includes(globalSearchQuery)) {
-          renderedModules['mod_attachments'] = attHtml;
-        }
+        const matchAtt = !globalSearchQuery || sec.attachments.some(att => checkMatch(att.name));
+        if (matchAtt) renderedModules['mod_attachments'] = generateAttachmentsHtml(sec);
       }
 
       const actualModuleIds = Object.keys(renderedModules);
@@ -404,7 +408,7 @@
       });
       flexContainer.appendChild(mainGrid);
 
-      const filteredNotes = (sec.stickyNotes || []).filter(n => !globalSearchQuery || matchSearch(n.title) || matchSearch(n.content));
+      const filteredNotes = (sec.stickyNotes || []).filter(n => !globalSearchQuery || checkMatch(n.title) || checkMatch(n.content));
       if (filteredNotes.length > 0 || !globalSearchQuery) {
         notesSidebar.innerHTML = generateStickyNotesSidebarHtml(sec, filteredNotes);
         flexContainer.appendChild(notesSidebar);
