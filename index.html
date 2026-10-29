@@ -175,10 +175,21 @@
 
       data.sections.forEach(sec => {
         if (!sec.layout) sec.layout = [];
-        if (!sec.tables) sec.tables = []; else sec.tables = Object.values(sec.tables);
+        if (!sec.tables) sec.tables = []; else {
+          sec.tables = Object.values(sec.tables);
+          // Sécurisation et nettoyage des tableaux
+          sec.tables.forEach(t => {
+            if (!t.headers) t.headers = ["Col 1", "Col 2", "Col 3"];
+            if (!t.rows) t.rows = [];
+            t.rows = t.rows.map(r => {
+              if (!Array.isArray(r)) r = [];
+              while(r.length < t.headers.length) r.push("");
+              return r.slice(0, t.headers.length);
+            });
+          });
+        }
         if (!sec.tasks) sec.tasks = []; else {
           sec.tasks = Object.values(sec.tasks);
-          // Migration task resp vers resps
           sec.tasks.forEach(t => {
             if (!t.resps) {
               t.resps = t.resp ? [t.resp] : [];
@@ -198,20 +209,11 @@
         } else {
           sec.gpxTracks = Object.values(sec.gpxTracks);
         }
-
-        sec.localContacts.forEach(lc => {
-          if (lc.role !== undefined) {
-             if (!lc.emplacement) lc.emplacement = lc.role;
-             delete lc.role;
-          }
-        });
       });
 
       if (!data.contacts) data.contacts = [];
       if (!Array.isArray(data.contacts)) data.contacts = Object.values(data.contacts);
-      
       data.contacts = data.contacts.filter(c => !(c.id && c.id.startsWith('csv_')));
-      data.contacts.forEach(c => { if (c.role !== undefined) delete c.role; });
 
       return data;
     }
@@ -506,7 +508,6 @@
     function deleteGlobalContact(cId) { appData.contacts = appData.contacts.filter(x => x.id !== cId); saveData(); renderActiveSection(); }
 
 
-    // --- GESTION DES LISTES DE CONTACTS POUR LES TÂCHES (MULTI-RESPONSABLES) ---
     function getAvailableContactsForTask(secId) {
       let list = [];
       const sec = appData.sections.find(s => s.id === secId);
@@ -519,7 +520,7 @@
       return list.sort((a,b) => a.name.localeCompare(b.name));
     }
 
-    // --- TACHES AVEC MULTI-RESPONSABLES ---
+    // --- TACHES ---
     function generateTasksHtml(sec) {
       let listHtml = '';
       sec.tasks.forEach(task => {
@@ -527,7 +528,6 @@
         const currentStatus = task.status || 'À faire';
         const statusColors = { 'À faire': 'bg-slate-200 text-slate-700', 'En cours': 'bg-amber-100 text-amber-800', 'Validé': 'bg-emerald-100 text-emerald-800' };
         
-        // Liste des badges des responsables assignés
         let assigneesHtml = '';
         task.resps.forEach((respId, rIdx) => {
           let contactName = respId;
@@ -544,7 +544,6 @@
           `;
         });
 
-        // Options du select pour ajouter un responsable
         let selectOptions = `<option value="">+ Ajouter un responsable...</option>`;
         const available = getAvailableContactsForTask(sec.id);
         available.forEach(c => {
@@ -595,8 +594,7 @@
         if (!t.resps) t.resps = [];
         if (!t.resps.includes(contactId)) {
           t.resps.push(contactId);
-          saveData();
-          renderActiveSection();
+          saveData(); renderActiveSection();
         }
       }
     }
@@ -605,8 +603,7 @@
       const t = s?.tasks.find(x => x.id === tId);
       if (t && t.resps) {
         t.resps.splice(index, 1);
-        saveData();
-        renderActiveSection();
+        saveData(); renderActiveSection();
       }
     }
 
@@ -651,21 +648,26 @@
     function updateAgendaItem(sId, iId, f, v) { const s = appData.sections.find(x => x.id === sId); const i = s?.timeline.find(x => x.id === iId); if(i) { i[f] = v; saveData(); } }
     function deleteAgendaItem(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.timeline = s.timeline.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
 
-    // --- TABLEAUX NATIFS CORRIGÉS ---
+    // --- TABLEAUX NATIFS SÉCURISÉS ---
     function generateTableHtml(sec, table) {
+      if (!table.headers) table.headers = ["Col 1", "Col 2", "Col 3"];
+      if (!table.rows) table.rows = [];
+
       let headersHtml = '';
       table.headers.forEach((h, colIndex) => {
-        headersHtml += `<th class="p-0 border-r bg-slate-100 min-w-[120px]"><input type="text" value="${h}" onchange="updateTableHeader('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent font-bold text-slate-700 text-xs"></th>`;
+        headersHtml += `<th class="p-0 border-r bg-slate-100 min-w-[120px]"><input type="text" value="${h || ''}" onchange="updateTableHeader('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent font-bold text-slate-700 text-xs"></th>`;
       });
       headersHtml += `<th class="w-10 bg-slate-100 border-l"></th>`;
 
       let rowsHtml = '';
       table.rows.forEach((row, rowIndex) => {
+        if (!Array.isArray(row)) row = [];
         let cellsHtml = '';
-        row.forEach((cell, colIndex) => {
-          cellsHtml += `<td class="p-0 border-r border-b"><input type="text" value="${cell}" onchange="updateTableCell('${sec.id}', '${table.id}', ${rowIndex}, ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent text-xs text-slate-800"></td>`;
+        table.headers.forEach((_, colIndex) => {
+          const cellVal = row[colIndex] !== undefined ? row[colIndex] : '';
+          cellsHtml += `<td class="p-0 border-r border-b"><input type="text" value="${cellVal}" onchange="updateTableCell('${sec.id}', '${table.id}', ${rowIndex}, ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent text-xs text-slate-800"></td>`;
         });
-        cellsHtml += `<td class="p-0 border-b border-l text-center bg-slate-50"><button onclick="deleteTableRow('${sec.id}', '${table.id}', ${rowIndex})" class="text-slate-400 hover:text-rose-500"><i class="fa-solid fa-trash-can text-[10px]"></i></button></td>`;
+        cellsHtml += `<td class="p-0 border-b border-l text-center bg-slate-50"><button onclick="deleteTableRow('${sec.id}', '${table.id}', ${rowIndex})" class="text-slate-400 hover:text-rose-500 p-2"><i class="fa-solid fa-trash-can text-[10px]"></i></button></td>`;
         rowsHtml += `<tr class="hover:bg-slate-50">${cellsHtml}</tr>`;
       });
 
@@ -684,20 +686,53 @@
         <div class="w-full overflow-x-auto border border-slate-200 rounded-xl"><table class="w-full text-left border-collapse"><thead><tr>${headersHtml}</tr></thead><tbody>${rowsHtml}</tbody></table></div>
       `);
     }
-    function addNativeTable(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.tables.push({ id: 'tbl_' + Date.now(), title: "Nouveau Tableau", headers: ["Col 1", "Col 2", "Col 3"], rows: [["", "", ""]] }); saveData(); renderActiveSection(); } }
+    function addNativeTable(secId) { 
+      const sec = appData.sections.find(s => s.id === secId); 
+      if(sec) { 
+        if(!sec.tables) sec.tables = [];
+        sec.tables.push({ id: 'tbl_' + Date.now(), title: "Nouveau Tableau", headers: ["Col 1", "Col 2", "Col 3"], rows: [["", "", ""]] }); 
+        saveData(); renderActiveSection(); 
+      } 
+    }
     function updateTableTitle(sId, tId, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.title = v; saveData(); } }
     function updateTableHeader(sId, tId, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.headers[c] = v; saveData(); } }
-    function updateTableCell(sId, tId, r, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.rows[r][c] = v; saveData(); } }
-    function addTableRow(sId, tId) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.rows.push(new Array(t.headers.length).fill("")); saveData(); renderActiveSection(); } }
-    function addTableColumn(sId, tId) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.headers.push("Nouvelle"); t.rows.forEach(r => r.push("")); saveData(); renderActiveSection(); } }
-    function deleteTableRow(sId, tId, r) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.rows.splice(r, 1); saveData(); renderActiveSection(); } }
+    function updateTableCell(sId, tId, r, c, v) { 
+      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
+      if(t && t.rows[r]) { 
+        t.rows[r][c] = v; 
+        saveData(); 
+      } 
+    }
+    function addTableRow(sId, tId) { 
+      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
+      if(t) { 
+        if(!t.rows) t.rows = [];
+        t.rows.push(new Array(t.headers.length).fill("")); 
+        saveData(); renderActiveSection(); 
+      } 
+    }
+    function addTableColumn(sId, tId) { 
+      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
+      if(t) { 
+        t.headers.push("Nouvelle"); 
+        if(!t.rows) t.rows = [];
+        t.rows.forEach(r => r.push("")); 
+        saveData(); renderActiveSection(); 
+      } 
+    }
+    function deleteTableRow(sId, tId, r) { 
+      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
+      if(t && t.rows) { 
+        t.rows.splice(r, 1); 
+        saveData(); renderActiveSection(); 
+      } 
+    }
     function deleteTable(sId, tId) { 
       const s = appData.sections.find(x => x.id === sId); 
       if(s) { 
-        s.tables = s.tables.filter(x => x.id !== tId); 
-        s.layout = s.layout.filter(id => id !== 'tbl_' + tId); // Nettoyage propre du layout
-        saveData(); 
-        renderActiveSection(); 
+        s.tables = (s.tables || []).filter(x => x.id !== tId); 
+        s.layout = (s.layout || []).filter(id => id !== 'tbl_' + tId);
+        saveData(); renderActiveSection(); 
       } 
     }
 
@@ -722,10 +757,9 @@
     function deleteSheet(sId, shId) { 
       const s = appData.sections.find(x => x.id === sId); 
       if(s) { 
-        s.sheets = s.sheets.filter(x => x.id !== shId); 
-        s.layout = s.layout.filter(id => id !== 'sht_' + shId);
-        saveData(); 
-        renderActiveSection(); 
+        s.sheets = (s.sheets || []).filter(x => x.id !== shId); 
+        s.layout = (s.layout || []).filter(id => id !== 'sht_' + shId);
+        saveData(); renderActiveSection(); 
       } 
     }
 
@@ -791,29 +825,30 @@
       }
 
       if (name) {
+        if(!sec.localContacts) sec.localContacts = [];
         sec.localContacts.push({ id: 'lc_' + Date.now(), name: name, emplacement: "", phone: phone });
         saveData(); renderActiveSection();
       }
     }
-    function addLocalContact(sId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.localContacts.push({ id: 'lc_' + Date.now(), name: "Nouveau Bénévole", emplacement: "", phone: ""}); saveData(); renderActiveSection(); } }
-    function updateLocalContactField(sId, cId, f, v) { const c = appData.sections.find(x => x.id === sId)?.localContacts.find(x => x.id === cId); if(c) { c[f] = v; saveData(); } }
-    function deleteLocalContact(sId, cId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.localContacts = s.localContacts.filter(x => x.id !== cId); saveData(); renderActiveSection(); } }
+    function addLocalContact(sId) { const s = appData.sections.find(x => x.id === sId); if(s) { if(!s.localContacts) s.localContacts = []; s.localContacts.push({ id: 'lc_' + Date.now(), name: "Nouveau Bénévole", emplacement: "", phone: ""}); saveData(); renderActiveSection(); } }
+    function updateLocalContactField(sId, cId, f, v) { const c = appData.sections.find(x => x.id === sId)?.localContacts?.find(x => x.id === cId); if(c) { c[f] = v; saveData(); } }
+    function deleteLocalContact(sId, cId) { const s = appData.sections.find(x => x.id === sId); if(s && s.localContacts) { s.localContacts = s.localContacts.filter(x => x.id !== cId); saveData(); renderActiveSection(); } }
 
 
     // --- IMAGES & PIECES JOINTES ---
     function generateImagesHtml(sec) {
-      let g = ''; sec.images.forEach(img => g += `<div class="relative group aspect-video bg-slate-100 rounded-xl overflow-hidden"><img src="${img.dataUrl}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3"><button onclick="deleteImage('${sec.id}', '${img.id}')" class="bg-rose-500 text-white p-2 rounded-full"><i class="fa-solid fa-trash"></i></button></div></div>`);
+      let g = ''; (sec.images || []).forEach(img => g += `<div class="relative group aspect-video bg-slate-100 rounded-xl overflow-hidden"><img src="${img.dataUrl}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3"><button onclick="deleteImage('${sec.id}', '${img.id}')" class="bg-rose-500 text-white p-2 rounded-full"><i class="fa-solid fa-trash"></i></button></div></div>`);
       return wrapModuleDraggable('mod_images', `<div class="border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-blue-500"><i class="fa-solid fa-image"></i> Images</h3></div><div class="grid grid-cols-2 md:grid-cols-3 gap-3">${g}</div>`);
     }
-    function uploadImage(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { s.images.push({id: 'img_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); }
-    function deleteImage(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.images = s.images.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
+    function uploadImage(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { if(!s.images) s.images = []; s.images.push({id: 'img_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); }
+    function deleteImage(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s && s.images) { s.images = s.images.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
 
     function generateAttachmentsHtml(sec) {
-      let l = ''; sec.attachments.forEach(att => l += `<div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-xs"><span>${att.name}</span> <button onclick="deleteAttachment('${sec.id}', '${att.id}')" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></div>`);
+      let l = ''; (sec.attachments || []).forEach(att => l += `<div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-xs"><span>${att.name}</span> <button onclick="deleteAttachment('${sec.id}', '${att.id}')" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></div>`);
       return wrapModuleDraggable('mod_attachments', `<div class="border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-purple-500"><i class="fa-solid fa-paperclip"></i> Pièces Jointes</h3></div><div class="grid gap-2">${l}</div>`);
     }
-    function uploadAttachment(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { s.attachments.push({id: 'att_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); }
-    function deleteAttachment(sId, aId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.attachments = s.attachments.filter(x => x.id !== aId); saveData(); renderActiveSection(); } }
+    function uploadAttachment(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { if(!s.attachments) s.attachments = []; s.attachments.push({id: 'att_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); }
+    function deleteAttachment(sId, aId) { const s = appData.sections.find(x => x.id === sId); if(s && s.attachments) { s.attachments = s.attachments.filter(x => x.id !== aId); saveData(); renderActiveSection(); } }
 
 
     // --- MODAL RECAPITULATIF CONTACT ---
@@ -855,7 +890,6 @@
       let missionCount = 0;
 
       appData.sections.forEach(sec => {
-        // Recherche dans les tâches (multi-responsables resps)
         const assignedTasks = (sec.tasks || []).filter(t => (t.resps || []).includes(contactId));
         const assignedTimeline = (sec.timeline || []).filter(t => t.resp === contactId);
 
