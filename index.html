@@ -32,6 +32,7 @@
     .module-drag-handle:active, .section-drag-handle:active { cursor: grabbing; }
     .module-drag-over { border: 2px dashed #10b981 !important; background-color: #ecfdf5 !important; opacity: 0.8; }
     .module-dragging { opacity: 0.4; transform: scale(0.98); }
+    .section-drop-target { background-color: #d1fae5 !important; border: 2px dashed #059669 !important; }
     
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -277,6 +278,14 @@
     function handleSectionDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
     function handleSectionDrop(e, targetSecId) {
       e.preventDefault();
+      // Si on dépose un module sur une section dans la sidebar
+      if (draggedModuleId && draggedSectionId && draggedSectionId !== targetSecId) {
+        transferModuleBetweenSections(draggedSectionId, targetSecId, draggedModuleId);
+        draggedModuleId = null;
+        draggedSectionId = null;
+        return;
+      }
+      // Sinon réorganisation des sections
       if (!draggedSectionId || draggedSectionId === targetSecId) return;
       const oldIdx = appData.sections.findIndex(s => s.id === draggedSectionId);
       const newIdx = appData.sections.findIndex(s => s.id === targetSecId);
@@ -288,6 +297,78 @@
       }
     }
 
+    // --- TRANSFERT DE MODULE D'UNE SECTION À UNE AUTRE ---
+    function transferModuleBetweenSections(fromSecId, toSecId, moduleId) {
+      const fromSec = appData.sections.find(s => s.id === fromSecId);
+      const toSec = appData.sections.find(s => s.id === toSecId);
+      if (!fromSec || !toSec) return;
+
+      // Retirer du layout de la section source
+      fromSec.layout = fromSec.layout.filter(id => id !== moduleId);
+
+      // Si c'est un tableau ou un lien ou une feuille, le déplacer dans les tableaux/liens/feuilles de la section cible
+      if (moduleId.startsWith('tbl_')) {
+        const tblIndex = (fromSec.tables || []).findIndex(t => t.id === moduleId);
+        if (tblIndex > -1) {
+          const [tbl] = fromSec.tables.splice(tblIndex, 1);
+          if (!toSec.tables) toSec.tables = [];
+          toSec.tables.push(tbl);
+        }
+      } else if (moduleId.startsWith('sht_')) {
+        const shtId = moduleId.replace('sht_', '');
+        const shtIndex = (fromSec.sheets || []).findIndex(s => s.id === shtId);
+        if (shtIndex > -1) {
+          const [sht] = fromSec.sheets.splice(shtIndex, 1);
+          if (!toSec.sheets) toSec.sheets = [];
+          toSec.sheets.push(sht);
+        }
+      } else if (moduleId.startsWith('lnk_')) {
+        const lnkId = moduleId.replace('lnk_', '');
+        const lnkIndex = (fromSec.links || []).findIndex(l => l.id === lnkId);
+        if (lnkIndex > -1) {
+          const [lnk] = fromSec.links.splice(lnkIndex, 1);
+          if (!toSec.links) toSec.links = [];
+          toSec.links.push(lnk);
+        }
+      } else if (moduleId === 'mod_map') {
+        // Déplacer les pistes GPX
+        if (fromSec.gpxTracks && fromSec.gpxTracks.length > 0) {
+          if (!toSec.gpxTracks) toSec.gpxTracks = [];
+          toSec.gpxTracks.push(...fromSec.gpxTracks);
+          fromSec.gpxTracks = [];
+        }
+      } else if (moduleId === 'mod_tasks') {
+        if (fromSec.tasks && fromSec.tasks.length > 0) {
+          if (!toSec.tasks) toSec.tasks = [];
+          toSec.tasks.push(...fromSec.tasks);
+          fromSec.tasks = [];
+        }
+      } else if (moduleId === 'mod_agenda') {
+        if (fromSec.timeline && fromSec.timeline.length > 0) {
+          if (!toSec.timeline) toSec.timeline = [];
+          toSec.timeline.push(...fromSec.timeline);
+          fromSec.timeline = [];
+        }
+      } else if (moduleId === 'mod_local_contacts') {
+        if (fromSec.localContacts && fromSec.localContacts.length > 0) {
+          if (!toSec.localContacts) toSec.localContacts = [];
+          toSec.localContacts.push(...fromSec.localContacts);
+          fromSec.localContacts = [];
+        }
+      }
+
+      // Ajouter au layout de la section cible
+      if (!toSec.layout.includes(moduleId)) {
+        toSec.layout.push(moduleId);
+      }
+
+      activeSectionId = toSecId;
+      saveData();
+      renderSidebar();
+      renderActiveSection();
+      alert(`Module déplacé avec succès vers la section "${toSec.title}" !`);
+    }
+
     function renderSidebar() {
       const container = document.getElementById('sidebar-sections-list');
       container.innerHTML = '';
@@ -296,8 +377,9 @@
         const item = document.createElement('div');
         item.draggable = true;
         item.ondragstart = (e) => handleSectionDragStart(e, sec.id);
-        item.ondragover = handleSectionDragOver;
-        item.ondrop = (e) => handleSectionDrop(e, sec.id);
+        item.ondragover = (e) => { e.preventDefault(); e.currentTarget.classList.add('section-drop-target'); };
+        item.ondragleave = (e) => { e.currentTarget.classList.remove('section-drop-target'); };
+        item.ondrop = (e) => { e.currentTarget.classList.remove('section-drop-target'); handleSectionDrop(e, sec.id); };
 
         item.className = `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all ${isActive ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'}`;
         item.onclick = (e) => { 
@@ -354,7 +436,12 @@
       return false;
     }
 
-    function handleModuleDragStart(e, moduleId) { draggedModuleId = moduleId; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('module-dragging'), 0); }
+    function handleModuleDragStart(e, moduleId) { 
+      draggedModuleId = moduleId; 
+      draggedSectionId = activeSectionId;
+      e.dataTransfer.effectAllowed = 'move'; 
+      setTimeout(() => e.target.classList.add('module-dragging'), 0); 
+    }
     function handleModuleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('module-drag-over'); }
     function handleModuleDragLeave(e) { e.currentTarget.classList.remove('module-drag-over'); }
     function handleModuleDrop(e, targetModuleId) {
@@ -369,7 +456,9 @@
     function handleModuleDragEnd(e) { if (e.target) e.target.classList.remove('module-dragging'); draggedModuleId = null; }
 
     function wrapModuleDraggable(moduleId, contentHtml, isSingle = false) {
-      const spanClass = isSingle ? "col-span-1 xl:col-span-2" : "col-span-1";
+      // Les cartes (mod_map) prennent TOUJOURS toute la largeur (col-span-1 xl:col-span-2) et ne peuvent pas avoir de voisin à côté
+      const isMap = moduleId === 'mod_map';
+      const spanClass = (isSingle || isMap) ? "col-span-1 xl:col-span-2" : "col-span-1";
       return `
         <div draggable="true" 
              ondragstart="handleModuleDragStart(event, '${moduleId}')" 
@@ -378,7 +467,7 @@
              ondrop="handleModuleDrop(event, '${moduleId}')" 
              ondragend="handleModuleDragEnd(event)" 
              class="${spanClass} bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative group transition-all h-full flex flex-col">
-          <div class="absolute top-2 right-2 module-drag-handle text-slate-300 hover:text-emerald-500 p-1 bg-white rounded cursor-move z-10" title="Glisser pour réorganiser">
+          <div class="absolute top-2 right-2 module-drag-handle text-slate-300 hover:text-emerald-500 p-1 bg-white rounded cursor-move z-10" title="Glisser pour réorganiser dans la page ou déposer sur une section à gauche pour transférer">
             <i class="fa-solid fa-grip"></i>
           </div>
           <div class="flex-1 flex flex-col">
