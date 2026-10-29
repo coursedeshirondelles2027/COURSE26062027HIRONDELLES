@@ -66,7 +66,7 @@
         </div>
       </div>
 
-      <!-- MOTEUR DE RECHERCHE GLOBAL & BOUTONS -->
+      <!-- MOTEUR DE RECHERCHE GLOBAL -->
       <div class="flex items-center flex-wrap gap-2">
         <div class="relative">
           <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
@@ -92,7 +92,7 @@
   <!-- MAIN CONTAINER -->
   <div class="flex-1 flex overflow-hidden">
 
-    <!-- SIDEBAR NAVIGATION (AVEC DRAG & DROP DES SECTIONS) -->
+    <!-- SIDEBAR NAVIGATION -->
     <aside class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-sm z-20">
       <div class="p-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Modules & Sections</span>
@@ -117,7 +117,6 @@
       <div class="p-5 border-b border-slate-200">
         <label class="text-xs font-bold text-slate-500 block mb-1">Sélectionner un contact :</label>
         <select id="recap-contact-select" onchange="updateRecapView()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:border-indigo-500 outline-none">
-          <!-- Rempli dynamiquement -->
         </select>
       </div>
       <div id="recap-content-area" class="p-5 flex-1 overflow-y-auto space-y-4 bg-slate-100">
@@ -159,7 +158,7 @@
         const data = snapshot.val();
         if (data) { appData = sanitizeData(data); } else { appData = defaultData; eventRef.set(appData); }
         if (!activeSectionId && appData.sections.length > 0) activeSectionId = appData.sections[0].id;
-        renderHeader(); renderSidebar(); renderActiveSection();
+        renderSidebar(); renderActiveSection();
       });
     }
 
@@ -219,11 +218,6 @@
       saveData();
     }
 
-    function renderHeader() {
-      // Configuration via header HTML editable direct
-    }
-
-    // --- DRAG & DROP DES SECTIONS DANS LA SIDEBAR ---
     function handleSectionDragStart(e, secId) {
       draggedSectionId = secId;
       e.dataTransfer.effectAllowed = 'move';
@@ -270,7 +264,7 @@
       });
     }
 
-    // --- MOTEUR DE RECHERCHE GLOBAL ---
+    // --- MOTEUR DE RECHERCHE GLOBAL AMÉLIORÉ ---
     function handleGlobalSearch(query) {
       globalSearchQuery = query.trim().toLowerCase();
       renderActiveSection();
@@ -281,7 +275,6 @@
       return (text || '').toLowerCase().includes(globalSearchQuery);
     }
 
-    // --- DRAG & DROP DES MODULES INTERNES ---
     function handleModuleDragStart(e, moduleId) { draggedModuleId = moduleId; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('module-dragging'), 0); }
     function handleModuleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('module-drag-over'); }
     function handleModuleDragLeave(e) { e.currentTarget.classList.remove('module-drag-over'); }
@@ -323,7 +316,6 @@
 
       container.innerHTML = '';
 
-      // --- 1. BOÎTE D'EN-TÊTE / AJOUTS ---
       const headerBox = document.createElement('div');
       headerBox.className = 'bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col gap-4';
       headerBox.innerHTML = `
@@ -347,7 +339,6 @@
       `;
       container.appendChild(headerBox);
 
-      // --- 2. STRUCTURE PRINCIPALE : GRILLE & SIDEBAR DE NOTES ---
       const flexContainer = document.createElement('div');
       flexContainer.className = "flex flex-col lg:flex-row gap-6 items-start w-full";
 
@@ -357,7 +348,6 @@
       const notesSidebar = document.createElement('div');
       notesSidebar.className = "w-full lg:w-[350px] shrink-0 lg:sticky lg:top-24 z-10"; 
 
-      // --- 3. GÉNÉRATION DES MODULES (AVEC FILTRE DE RECHERCHE GLOBALE) ---
       const renderedModules = {};
       
       if (sec.type === 'trace_admin') renderedModules['mod_map'] = generateMapModuleHtml(sec);
@@ -387,10 +377,16 @@
         if (!globalSearchQuery || tHtml.toLowerCase().includes(globalSearchQuery)) renderedModules['mod_local_contacts'] = tHtml;
       }
       if (sec.images.length > 0) {
-        renderedModules['mod_images'] = generateImagesHtml(sec);
+        const imgHtml = generateImagesHtml(sec);
+        if (!globalSearchQuery || imgHtml.toLowerCase().includes(globalSearchQuery)) {
+          renderedModules['mod_images'] = imgHtml;
+        }
       }
       if (sec.attachments.length > 0) {
-        renderedModules['mod_attachments'] = generateAttachmentsHtml(sec);
+        const attHtml = generateAttachmentsHtml(sec);
+        if (!globalSearchQuery || attHtml.toLowerCase().includes(globalSearchQuery)) {
+          renderedModules['mod_attachments'] = attHtml;
+        }
       }
 
       const actualModuleIds = Object.keys(renderedModules);
@@ -408,7 +404,6 @@
       });
       flexContainer.appendChild(mainGrid);
 
-      // --- 4. INSERTION DES NOTES DANS LA SIDEBAR ---
       const filteredNotes = (sec.stickyNotes || []).filter(n => !globalSearchQuery || matchSearch(n.title) || matchSearch(n.content));
       if (filteredNotes.length > 0 || !globalSearchQuery) {
         notesSidebar.innerHTML = generateStickyNotesSidebarHtml(sec, filteredNotes);
@@ -450,7 +445,6 @@
       });
     }
 
-    // --- NOTES LATÉRALES (SIDEBAR FIXE) ---
     function generateStickyNotesSidebarHtml(sec, notesToDisplay) {
       let listHtml = '';
       notesToDisplay.forEach(note => {
@@ -477,8 +471,6 @@
     function updateStickyNote(sId, nId, f, v) { const s = appData.sections.find(x => x.id === sId); const n = s?.stickyNotes.find(x => x.id === nId); if(n) { n[f] = v; saveData(); } }
     function deleteStickyNote(sId, nId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.stickyNotes = s.stickyNotes.filter(x => x.id !== nId); saveData(); renderActiveSection(); } }
 
-
-    // --- TABLEAUX NATIFS (AVEC SUPPRESSION DE COLONNE & COULEURS) ---
     function generateTableHtml(sec, table) {
       if (!table.headers) table.headers = ["Col 1", "Col 2"];
       if (!table.rows) table.rows = [];
@@ -605,7 +597,6 @@
       if(s) { s.tables = s.tables.filter(x => x.id !== tId); s.layout = s.layout.filter(id => id !== 'tbl_' + tId); saveData(); renderActiveSection(); } 
     }
 
-    // --- MODULES SECONDAIRES ---
     function generateMapModuleHtml(sec) {
       let mapsHtml = '';
       if (sec.gpxTracks.length === 0) { mapsHtml = `<div class="text-xs text-slate-400 italic mb-4">Aucun fichier GPX chargé.</div>`; } else {
@@ -728,7 +719,6 @@
     function uploadAttachment(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { if(!s.attachments) s.attachments = []; s.attachments.push({id: 'att_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); e.target.value = ''; }
     function deleteAttachment(sId, aId) { const s = appData.sections.find(x => x.id === sId); if(s && s.attachments) { s.attachments = s.attachments.filter(x => x.id !== aId); saveData(); renderActiveSection(); } }
 
-    // --- MODAL RECAP ---
     function openRecapModal() {
       const select = document.getElementById('recap-contact-select');
       select.innerHTML = '<option value="">-- Choisir un contact --</option>';
