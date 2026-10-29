@@ -177,7 +177,6 @@
         if (!sec.layout) sec.layout = [];
         if (!sec.tables) sec.tables = []; else {
           sec.tables = Object.values(sec.tables);
-          // Sécurisation et nettoyage des tableaux
           sec.tables.forEach(t => {
             if (!t.headers) t.headers = ["Col 1", "Col 2", "Col 3"];
             if (!t.rows) t.rows = [];
@@ -368,9 +367,25 @@
     function addNewCustomSectionPrompt() {
       const title = prompt("Nom de la nouvelle section :");
       if (title) {
-        appData.sections.push({ id: 'sec_' + Date.now(), title: title, type: "standard", layout: [], tasks: [], stickyNotes: [], timeline: [], sheets: [], tables: [], localContacts: [], images: [], attachments: [], gpxTracks: [] });
-        saveData(); renderSidebar();
+        const newId = 'sec_' + Date.now();
+        appData.sections.push({ id: newId, title: title, type: "standard", layout: [], tasks: [], stickyNotes: [], timeline: [], sheets: [], tables: [], localContacts: [], images: [], attachments: [], gpxTracks: [] });
+        if (!activeSectionId) activeSectionId = newId; // Sélection automatique si c'est la seule section
+        saveData(); renderSidebar(); renderActiveSection();
       }
+    }
+
+    // --- NETTOYAGE DES CONTACTS SUPPRIMÉS ---
+    function removeContactFromAllTasksAndAgendas(contactId) {
+      appData.sections.forEach(s => {
+        if (s.tasks) s.tasks.forEach(t => {
+          if (t.resps && t.resps.includes(contactId)) {
+            t.resps = t.resps.filter(id => id !== contactId);
+          }
+        });
+        if (s.timeline) s.timeline.forEach(t => {
+          if (t.resp === contactId) t.resp = "";
+        });
+      });
     }
 
     // --- CARTES GPX ---
@@ -424,6 +439,7 @@
         reader.onload = function(e) { sec.gpxTracks.push({ id: 'gpx_' + Date.now() + Math.random(), name: file.name, data: e.target.result }); saveData(); renderActiveSection(); };
         reader.readAsText(file);
       });
+      event.target.value = ''; // Purge input file pour autoriser réimport
     }
     function deleteGPXTrack(secId, trackId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.gpxTracks = sec.gpxTracks.filter(t => t.id !== trackId); saveData(); renderActiveSection(); } }
 
@@ -505,7 +521,12 @@
     }
     function addGlobalContact() { appData.contacts.push({ id: 'c_' + Date.now(), name: "Nouveau Contact", org: "", phone: "", email: "" }); saveData(); renderActiveSection(); }
     function updateGlobalContactField(cId, f, v) { const c = appData.contacts.find(x => x.id === cId); if (c) { c[f] = v; saveData(); } }
-    function deleteGlobalContact(cId) { appData.contacts = appData.contacts.filter(x => x.id !== cId); saveData(); renderActiveSection(); }
+    function deleteGlobalContact(cId) { 
+      appData.contacts = appData.contacts.filter(x => x.id !== cId); 
+      removeContactFromAllTasksAndAgendas(cId); // Nettoyage de sécurité
+      saveData(); 
+      renderActiveSection(); 
+    }
 
 
     function getAvailableContactsForTask(secId) {
@@ -530,7 +551,7 @@
         
         let assigneesHtml = '';
         task.resps.forEach((respId, rIdx) => {
-          let contactName = respId;
+          let contactName = "Inconnu (Supprimé)";
           const localC = sec.localContacts?.find(x => x.id === respId);
           const globalC = appData.contacts?.find(x => x.id === respId);
           if (localC) contactName = localC.name;
@@ -584,7 +605,15 @@
     }
 
     function addNewTask(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.tasks.push({ id: 'k_' + Date.now(), name: "Nouvelle tâche", resps: [], date: "", status: "À faire", notes: "" }); saveData(); renderActiveSection(); } }
-    function updateTaskField(sId, tId, f, v) { const s = appData.sections.find(x => x.id === sId); const t = s?.tasks.find(x => x.id === tId); if(t) { t[f] = v; saveData(); } }
+    function updateTaskField(sId, tId, f, v) { 
+      const s = appData.sections.find(x => x.id === sId); 
+      const t = s?.tasks.find(x => x.id === tId); 
+      if(t) { 
+        t[f] = v; 
+        saveData(); 
+        if (f === 'status') renderActiveSection(); // Force UI refresh for select pill colors
+      } 
+    }
     function deleteTask(sId, tId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.tasks = s.tasks.filter(x => x.id !== tId); saveData(); renderActiveSection(); } }
     function addTaskAssignee(sId, tId, contactId) {
       if (!contactId) return;
@@ -648,7 +677,7 @@
     function updateAgendaItem(sId, iId, f, v) { const s = appData.sections.find(x => x.id === sId); const i = s?.timeline.find(x => x.id === iId); if(i) { i[f] = v; saveData(); } }
     function deleteAgendaItem(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.timeline = s.timeline.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
 
-    // --- TABLEAUX NATIFS SÉCURISÉS ---
+    // --- TABLEAUX NATIFS ---
     function generateTableHtml(sec, table) {
       if (!table.headers) table.headers = ["Col 1", "Col 2", "Col 3"];
       if (!table.rows) table.rows = [];
@@ -832,7 +861,14 @@
     }
     function addLocalContact(sId) { const s = appData.sections.find(x => x.id === sId); if(s) { if(!s.localContacts) s.localContacts = []; s.localContacts.push({ id: 'lc_' + Date.now(), name: "Nouveau Bénévole", emplacement: "", phone: ""}); saveData(); renderActiveSection(); } }
     function updateLocalContactField(sId, cId, f, v) { const c = appData.sections.find(x => x.id === sId)?.localContacts?.find(x => x.id === cId); if(c) { c[f] = v; saveData(); } }
-    function deleteLocalContact(sId, cId) { const s = appData.sections.find(x => x.id === sId); if(s && s.localContacts) { s.localContacts = s.localContacts.filter(x => x.id !== cId); saveData(); renderActiveSection(); } }
+    function deleteLocalContact(sId, cId) { 
+      const s = appData.sections.find(x => x.id === sId); 
+      if(s && s.localContacts) { 
+        s.localContacts = s.localContacts.filter(x => x.id !== cId); 
+        removeContactFromAllTasksAndAgendas(cId); // Nettoyage de sécurité
+        saveData(); renderActiveSection(); 
+      } 
+    }
 
 
     // --- IMAGES & PIECES JOINTES ---
@@ -840,14 +876,40 @@
       let g = ''; (sec.images || []).forEach(img => g += `<div class="relative group aspect-video bg-slate-100 rounded-xl overflow-hidden"><img src="${img.dataUrl}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3"><button onclick="deleteImage('${sec.id}', '${img.id}')" class="bg-rose-500 text-white p-2 rounded-full"><i class="fa-solid fa-trash"></i></button></div></div>`);
       return wrapModuleDraggable('mod_images', `<div class="border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-blue-500"><i class="fa-solid fa-image"></i> Images</h3></div><div class="grid grid-cols-2 md:grid-cols-3 gap-3">${g}</div>`);
     }
-    function uploadImage(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { if(!s.images) s.images = []; s.images.push({id: 'img_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); }
+    function uploadImage(e, sId) { 
+      const f = e.target.files[0]; if(!f) return; 
+      const r = new FileReader(); 
+      r.onload = (ev) => { 
+        const s = appData.sections.find(x => x.id === sId); 
+        if(s) { 
+          if(!s.images) s.images = []; 
+          s.images.push({id: 'img_'+Date.now(), name: f.name, dataUrl: ev.target.result}); 
+          saveData(); renderActiveSection(); 
+        }
+      }; 
+      r.readAsDataURL(f);
+      e.target.value = ''; // Purge file input
+    }
     function deleteImage(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s && s.images) { s.images = s.images.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
 
     function generateAttachmentsHtml(sec) {
       let l = ''; (sec.attachments || []).forEach(att => l += `<div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-xs"><span>${att.name}</span> <button onclick="deleteAttachment('${sec.id}', '${att.id}')" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></div>`);
       return wrapModuleDraggable('mod_attachments', `<div class="border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-purple-500"><i class="fa-solid fa-paperclip"></i> Pièces Jointes</h3></div><div class="grid gap-2">${l}</div>`);
     }
-    function uploadAttachment(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { if(!s.attachments) s.attachments = []; s.attachments.push({id: 'att_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); }
+    function uploadAttachment(e, sId) { 
+      const f = e.target.files[0]; if(!f) return; 
+      const r = new FileReader(); 
+      r.onload = (ev) => { 
+        const s = appData.sections.find(x => x.id === sId); 
+        if(s) { 
+          if(!s.attachments) s.attachments = []; 
+          s.attachments.push({id: 'att_'+Date.now(), name: f.name, dataUrl: ev.target.result}); 
+          saveData(); renderActiveSection(); 
+        }
+      }; 
+      r.readAsDataURL(f); 
+      e.target.value = ''; // Purge file input
+    }
     function deleteAttachment(sId, aId) { const s = appData.sections.find(x => x.id === sId); if(s && s.attachments) { s.attachments = s.attachments.filter(x => x.id !== aId); saveData(); renderActiveSection(); } }
 
 
