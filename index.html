@@ -116,6 +116,9 @@
           <h3 id="mymaps-modal-title" class="font-bold text-slate-800 text-sm md:text-base">Google My Maps</h3>
         </div>
         <div class="flex items-center gap-3">
+          <button onclick="refreshMyMapsModal()" class="text-xs bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold px-3 py-1.5 rounded-lg border border-sky-200 flex items-center gap-1.5 transition" title="Forcer la mise à jour des modifications">
+            <i class="fa-solid fa-rotate"></i> Rafraîchir
+          </button>
           <button onclick="downloadTrackGPX()" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5 transition">
             <i class="fa-solid fa-download"></i> Télécharger le GPX
           </button>
@@ -197,6 +200,8 @@
         if (!sec.tables) sec.tables = []; else {
           sec.tables = Object.values(sec.tables);
           sec.tables.forEach(t => {
+            // Nettoyage si l'id contenait par mégarde un doublon de préfixe
+            if (t.id && t.id.startsWith('tbl_tbl_')) t.id = t.id.replace('tbl_tbl_', 'tbl_');
             if (!t.headers) t.headers = ["Col 1", "Col 2"];
             if (!t.rows) t.rows = [];
             t.rows = t.rows.map(r => {
@@ -428,7 +433,7 @@
 
       sec.tables.forEach(t => {
         const matchTable = !globalSearchQuery || checkMatch(t.title) || t.headers.some(h => checkMatch(h)) || t.rows.some(r => r.some(cell => checkMatch(cell)));
-        if (matchTable) renderedModules['tbl_' + t.id] = generateTableHtml(sec, t);
+        if (matchTable) renderedModules[t.id] = generateTableHtml(sec, t);
       });
 
       sec.sheets.forEach(s => {
@@ -552,7 +557,7 @@
     function updateStickyNote(sId, nId, f, v) { const s = appData.sections.find(x => x.id === sId); const n = s?.stickyNotes.find(x => x.id === nId); if(n) { n[f] = v; saveData(); } }
     function deleteStickyNote(sId, nId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.stickyNotes = s.stickyNotes.filter(x => x.id !== nId); saveData(); renderActiveSection(); } }
 
-    // --- MODULE LIAISON MY MAPS & PLEIN ÉCRAN ---
+    // --- MODULE LIAISON MY MAPS & PLEIN ÉCRAN ANTI-CACHE ---
     function openMyMapsModal(secId, trackId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
@@ -560,6 +565,14 @@
       if (!trk) return;
       currentActiveTrackForModal = trk;
 
+      loadMyMapsIframeUrl(trk);
+      document.getElementById('mymaps-modal-title').innerText = `Google My Maps - ${trk.name}`;
+      const modal = document.getElementById('mymaps-fullscreen-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function loadMyMapsIframeUrl(trk) {
       let mymapsUrl = trk.mymapsUrl || "";
       if (!mymapsUrl) {
         mymapsUrl = "https://www.google.com/maps/d/";
@@ -569,12 +582,15 @@
           mymapsUrl = mymapsUrl.replace("google.com/maps/d/", "google.com/maps/d/embed?");
         }
       }
+      const separator = mymapsUrl.includes('?') ? '&' : '?';
+      const freshUrl = `${mymapsUrl}${separator}_cb=${Date.now()}`;
+      document.getElementById('mymaps-iframe').src = freshUrl;
+    }
 
-      document.getElementById('mymaps-modal-title').innerText = `Google My Maps - ${trk.name}`;
-      document.getElementById('mymaps-iframe').src = mymapsUrl;
-      const modal = document.getElementById('mymaps-fullscreen-modal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+    function refreshMyMapsModal() {
+      if (currentActiveTrackForModal) {
+        loadMyMapsIframeUrl(currentActiveTrackForModal);
+      }
     }
 
     function closeMyMapsModal() {
@@ -647,6 +663,133 @@
     function handleGPXUpload(event, secId) { const files = event.target.files; if (!files || files.length === 0) return; const sec = appData.sections.find(s => s.id === secId); if (!sec) return; Array.from(files).forEach(file => { const reader = new FileReader(); reader.onload = function(e) { sec.gpxTracks.push({ id: 'gpx_' + Date.now() + Math.random(), name: file.name, data: e.target.result, mymapsUrl: "" }); saveData(); renderActiveSection(); }; reader.readAsText(file); }); event.target.value = ''; }
     function deleteGPXTrack(secId, trackId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.gpxTracks = sec.gpxTracks.filter(t => t.id !== trackId); saveData(); renderActiveSection(); } }
     function initMap(sec) { Object.values(leafletMaps).forEach(m => m.remove()); leafletMaps = {}; sec.gpxTracks.forEach((trk) => { const mapContainerId = 'map-' + trk.id; const container = document.getElementById(mapContainerId); if (!container) return; const map = L.map(mapContainerId).setView([43.4633, -1.4519], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map); const parser = new DOMParser(); const xmlDoc = parser.parseFromString(trk.data, "text/xml"); const points = []; xmlDoc.querySelectorAll("trkpt, wpt, rtept").forEach(pt => { const lat = parseFloat(pt.getAttribute("lat")); const lon = parseFloat(pt.getAttribute("lon")); if (!isNaN(lat) && !isNaN(lon)) points.push([lat, lon]); }); if (points.length > 0) { const polyline = L.polyline(points, { color: '#16a34a', weight: 4 }).addTo(map); map.fitBounds(polyline.getBounds(), { padding: [20, 20] }); } leafletMaps[trk.id] = map; }); }
+
+    // --- TABLEAUX INTÉGRÉS ---
+    function generateTableHtml(sec, table) {
+      if (!table.headers) table.headers = ["Col 1", "Col 2"];
+      if (!table.rows) table.rows = [];
+      if (!table.colColors) table.colColors = Array(table.headers.length).fill("#f8fafc");
+      if (!table.rowColors) table.rowColors = Array(table.rows.length).fill("#ffffff");
+
+      let headersHtml = '';
+      table.headers.forEach((h, colIndex) => {
+        const cColor = table.colColors[colIndex] || '#f8fafc';
+        headersHtml += `<th class="p-0 border-r min-w-[120px]" style="background-color: ${cColor};">
+          <div class="flex items-center justify-between p-1 px-2">
+            <input type="text" value="${h || ''}" onchange="updateTableHeader('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="cell-input w-full bg-transparent font-bold text-slate-700 text-xs outline-none">
+            <div class="flex items-center gap-1 shrink-0">
+              <input type="color" value="${cColor}" onchange="updateTableColColor('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="w-4 h-4 p-0 border-0 cursor-pointer rounded color-picker-custom" title="Couleur Colonne">
+              <button onclick="deleteTableColumn('${sec.id}', '${table.id}', ${colIndex})" class="text-slate-400 hover:text-rose-600 px-1 text-[10px]" title="Supprimer cette colonne"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+        </th>`;
+      });
+      headersHtml += `<th class="w-16 bg-slate-100 border-l"></th>`;
+
+      let rowsHtml = '';
+      table.rows.forEach((row, rowIndex) => {
+        if (!Array.isArray(row)) row = [];
+        let cellsHtml = '';
+        const rColor = table.rowColors[rowIndex] || '#ffffff';
+        
+        table.headers.forEach((_, colIndex) => {
+          const cellVal = row[colIndex] !== undefined ? row[colIndex] : '';
+          const cColor = table.colColors[colIndex] || '#f8fafc';
+          const cellBg = (rColor !== '#ffffff') ? rColor : (cColor !== '#f8fafc' ? cColor : 'transparent');
+          
+          cellsHtml += `<td class="p-0 border-r border-b transition-colors" style="background-color: ${cellBg};">
+            <input type="text" value="${cellVal}" onchange="updateTableCell('${sec.id}', '${table.id}', ${rowIndex}, ${colIndex}, this.value)" class="cell-input w-full p-2.5 bg-transparent text-xs text-slate-800 outline-none">
+          </td>`;
+        });
+        
+        cellsHtml += `<td class="p-0 border-b border-l bg-slate-50 w-16">
+          <div class="flex items-center justify-center gap-2 h-full py-2">
+            <input type="color" value="${rColor}" onchange="updateTableRowColor('${sec.id}', '${table.id}', ${rowIndex}, this.value)" class="w-4 h-4 p-0 border-0 cursor-pointer shrink-0 rounded color-picker-custom" title="Couleur Ligne">
+            <button onclick="deleteTableRow('${sec.id}', '${table.id}', ${rowIndex})" class="text-slate-400 hover:text-rose-500"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
+          </div>
+        </td>`;
+        
+        rowsHtml += `<tr class="hover:opacity-90 transition-opacity">${cellsHtml}</tr>`;
+      });
+
+      return `
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3 pr-6 mb-4">
+          <div class="flex-1 flex items-center gap-2">
+            <i class="fa-solid fa-table text-emerald-600"></i>
+            <input type="text" value="${table.title || ''}" placeholder="Titre du tableau..." onchange="updateTableTitle('${sec.id}', '${table.id}', this.value)" class="font-bold text-slate-800 text-sm bg-transparent focus:bg-slate-50 w-full sm:w-1/2 rounded px-1">
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="addTableRow('${sec.id}', '${table.id}')" class="text-xs bg-slate-100 px-2.5 py-1.5 rounded-lg border hover:bg-slate-200">+ Ligne</button>
+            <button onclick="addTableColumn('${sec.id}', '${table.id}')" class="text-xs bg-slate-100 px-2.5 py-1.5 rounded-lg border hover:bg-slate-200">+ Col</button>
+            <button onclick="deleteTable('${sec.id}', '${table.id}')" class="text-xs text-slate-400 border px-2.5 py-1.5 rounded-lg hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>
+        <div class="w-full overflow-x-auto border border-slate-200 rounded-xl">
+          <table class="w-full text-left border-collapse">
+            <thead><tr>${headersHtml}</tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
+    }
+    
+    function addNativeTable(secId) { 
+      const sec = appData.sections.find(s => s.id === secId); 
+      if(sec) { 
+        let colCountInput = prompt("Combien de colonnes souhaitez-vous créer ? (ex: 2)", "2");
+        if (colCountInput === null) return; 
+        
+        let colCount = parseInt(colCountInput);
+        if (isNaN(colCount) || colCount < 1) colCount = 2;
+
+        const headers = Array.from({ length: colCount }, (_, i) => `Col ${i + 1}`);
+        const initialRow = Array(colCount).fill("");
+
+        if(!sec.tables) sec.tables = [];
+        sec.tables.push({ 
+          id: 'tbl_' + Date.now(), 
+          title: "Nouveau Tableau", 
+          headers: headers, 
+          rows: [initialRow],
+          colColors: Array(colCount).fill("#f8fafc"),
+          rowColors: ["#ffffff"]
+        }); 
+        saveData(); renderActiveSection(); 
+      } 
+    }
+
+    function updateTableTitle(sId, tId, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.title = v; saveData(); } }
+    function updateTableHeader(sId, tId, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.headers[c] = v; saveData(); } }
+    function updateTableCell(sId, tId, r, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t && t.rows[r]) { t.rows[r][c] = v; saveData(); } }
+    function updateTableColColor(sId, tId, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.colColors[c] = v; saveData(); renderActiveSection(); } }
+    function updateTableRowColor(sId, tId, r, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.rowColors[r] = v; saveData(); renderActiveSection(); } }
+
+    function addTableRow(sId, tId) { 
+      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
+      if(t) { t.rows.push(new Array(t.headers.length).fill("")); t.rowColors.push("#ffffff"); saveData(); renderActiveSection(); } 
+    }
+    function addTableColumn(sId, tId) { 
+      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
+      if(t) { t.headers.push("Nouvelle"); t.rows.forEach(r => r.push("")); t.colColors.push("#f8fafc"); saveData(); renderActiveSection(); } 
+    }
+    function deleteTableColumn(sId, tId, colIndex) {
+      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId);
+      if (t) {
+        if (t.headers.length <= 1) { alert("Impossible de supprimer la dernière colonne."); return; }
+        t.headers.splice(colIndex, 1);
+        t.colColors.splice(colIndex, 1);
+        t.rows.forEach(r => r.splice(colIndex, 1));
+        saveData(); renderActiveSection();
+      }
+    }
+    function deleteTableRow(sId, tId, r) { 
+      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
+      if(t && t.rows) { t.rows.splice(r, 1); t.rowColors.splice(r, 1); saveData(); renderActiveSection(); } 
+    }
+    function deleteTable(sId, tId) { 
+      const s = appData.sections.find(x => x.id === sId); 
+      if(s) { s.tables = s.tables.filter(x => x.id !== tId); s.layout = s.layout.filter(id => id !== tId); saveData(); renderActiveSection(); } 
+    }
 
     // --- MODULE LIEN AVEC PRÉVISUALISATION INTELLIGENTE ---
     function generateLinkHtml(sec, link) {
