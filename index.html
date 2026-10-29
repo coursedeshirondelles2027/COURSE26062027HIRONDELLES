@@ -48,45 +48,8 @@
 <body class="h-full font-sans text-slate-800 bg-slate-100 flex flex-col antialiased" onkeydown="handleGlobalKeyDown(event)">
 
   <!-- TOP HEADER BANNER -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      
-      <div class="flex items-center space-x-3">
-        <div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm flex items-center justify-center shrink-0">
-          <i class="fa-solid fa-person-running text-xl"></i>
-        </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <h1 contenteditable="true" onblur="updateConfigField('title', this.innerText)" class="text-xl font-bold text-slate-900 tracking-tight outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier">Course des Hirondelles 2027</h1>
-          </div>
-          <p class="text-xs text-slate-500 flex flex-wrap items-center gap-3 mt-0.5">
-            <span><i class="fa-regular fa-calendar text-emerald-600 mr-1"></i><span contenteditable="true" onblur="updateConfigField('date', this.innerText)" class="outline-none hover:bg-slate-50 rounded px-1">26 juin 2027</span></span>
-            <span><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i><span contenteditable="true" onblur="updateConfigField('location', this.innerText)" class="outline-none hover:bg-slate-50 rounded px-1">Saint-Pierre-d'Irube</span></span>
-          </p>
-        </div>
-      </div>
-
-      <!-- MOTEUR DE RECHERCHE GLOBAL -->
-      <div class="flex items-center flex-wrap gap-2">
-        <div class="relative">
-          <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-          <input type="text" id="global-search-input" oninput="handleGlobalSearch(this.value)" placeholder="Rechercher sur tout le site..." class="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs focus:bg-white focus:border-emerald-500 outline-none w-48 sm:w-64 transition shadow-inner">
-        </div>
-
-        <button onclick="openRecapModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
-          <i class="fa-solid fa-clipboard-user"></i> Récap.
-        </button>
-
-        <button onclick="saveData(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
-          <i class="fa-solid fa-floppy-disk"></i> Enregistrer
-        </button>
-
-        <span id="save-indicator" class="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md flex items-center gap-1 font-medium">
-          <i class="fa-solid fa-check"></i> Synchronisé
-        </span>
-      </div>
-
-    </div>
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm" id="top-header-container">
+    <!-- Rendu dynamique par renderHeader() -->
   </header>
 
   <!-- MAIN CONTAINER -->
@@ -183,7 +146,9 @@
         const data = snapshot.val();
         if (data) { appData = sanitizeData(data); } else { appData = defaultData; eventRef.set(appData); }
         if (!activeSectionId && appData.sections.length > 0) activeSectionId = appData.sections[0].id;
-        renderSidebar(); renderActiveSection();
+        renderHeader();
+        renderSidebar(); 
+        renderActiveSection();
       });
     }
 
@@ -200,7 +165,6 @@
         if (!sec.tables) sec.tables = []; else {
           sec.tables = Object.values(sec.tables);
           sec.tables.forEach(t => {
-            // Nettoyage si l'id contenait par mégarde un doublon de préfixe
             if (t.id && t.id.startsWith('tbl_tbl_')) t.id = t.id.replace('tbl_tbl_', 'tbl_');
             if (!t.headers) t.headers = ["Col 1", "Col 2"];
             if (!t.rows) t.rows = [];
@@ -246,6 +210,50 @@
         if (ind) ind.innerHTML = '<i class="fa-solid fa-check"></i> Synchronisé';
         if (explicitNotification) alert("Données enregistrées.");
       });
+    }
+
+    function renderHeader() {
+      const headerContainer = document.getElementById('top-header-container');
+      if (!headerContainer || !appData || !appData.config) return;
+      const cfg = appData.config;
+      headerContainer.innerHTML = `
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div class="flex items-center space-x-3">
+            <div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-sm flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-person-running text-xl"></i>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h1 contenteditable="true" onblur="updateConfigField('title', this.innerText)" class="text-xl font-bold text-slate-900 tracking-tight outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier">${cfg.title || ''}</h1>
+              </div>
+              <p class="text-xs text-slate-500 flex flex-wrap items-center gap-3 mt-0.5">
+                <span><i class="fa-regular fa-calendar text-emerald-600 mr-1"></i><span contenteditable="true" onblur="updateConfigField('date', this.innerText)" class="outline-none hover:bg-slate-50 rounded px-1">${cfg.date || ''}</span></span>
+                <span><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i><span contenteditable="true" onblur="updateConfigField('location', this.innerText)" class="outline-none hover:bg-slate-50 rounded px-1">${cfg.location || ''}</span></span>
+              </p>
+            </div>
+          </div>
+
+          <!-- MOTEUR DE RECHERCHE GLOBAL -->
+          <div class="flex items-center flex-wrap gap-2">
+            <div class="relative">
+              <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input type="text" id="global-search-input" oninput="handleGlobalSearch(this.value)" value="${globalSearchQuery}" placeholder="Rechercher sur tout le site..." class="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs focus:bg-white focus:border-emerald-500 outline-none w-48 sm:w-64 transition shadow-inner">
+            </div>
+
+            <button onclick="openRecapModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
+              <i class="fa-solid fa-clipboard-user"></i> Récap.
+            </button>
+
+            <button onclick="saveData(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
+              <i class="fa-solid fa-floppy-disk"></i> Enregistrer
+            </button>
+
+            <span id="save-indicator" class="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md flex items-center gap-1 font-medium">
+              <i class="fa-solid fa-check"></i> Synchronisé
+            </span>
+          </div>
+        </div>
+      `;
     }
 
     function updateConfigField(field, val) {
