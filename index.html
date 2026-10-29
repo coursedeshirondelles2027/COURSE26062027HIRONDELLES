@@ -28,8 +28,8 @@
   <style>
     .leaflet-map-container { height: 400px; width: 100%; z-index: 10; }
     input.cell-input:focus { outline: 2px solid #10b981; outline-offset: -2px; z-index: 10; position: relative; }
-    .module-drag-handle { cursor: grab; }
-    .module-drag-handle:active { cursor: grabbing; }
+    .module-drag-handle, .section-drag-handle { cursor: grab; }
+    .module-drag-handle:active, .section-drag-handle:active { cursor: grabbing; }
     .module-drag-over { border: 2px dashed #10b981 !important; background-color: #ecfdf5 !important; opacity: 0.8; }
     .module-dragging { opacity: 0.4; transform: scale(0.98); }
     
@@ -57,19 +57,24 @@
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <h1 id="event-title-display" class="text-xl font-bold text-slate-900 tracking-tight">Course des Hirondelles 2027</h1>
+            <h1 contenteditable="true" onblur="updateConfigField('title', this.innerText)" class="text-xl font-bold text-slate-900 tracking-tight outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier">Course des Hirondelles 2027</h1>
           </div>
           <p class="text-xs text-slate-500 flex flex-wrap items-center gap-3 mt-0.5">
-            <span><i class="fa-regular fa-calendar text-emerald-600 mr-1"></i><span id="event-date-display">26 juin 2027</span></span>
-            <span><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i><span id="event-location-display">Saint-Pierre-d'Irube</span></span>
-            <span class="bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full text-[10px]" id="event-formats-display">10k, Relais, Marche</span>
+            <span><i class="fa-regular fa-calendar text-emerald-600 mr-1"></i><span contenteditable="true" onblur="updateConfigField('date', this.innerText)" class="outline-none hover:bg-slate-50 rounded px-1">26 juin 2027</span></span>
+            <span><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i><span contenteditable="true" onblur="updateConfigField('location', this.innerText)" class="outline-none hover:bg-slate-50 rounded px-1">Saint-Pierre-d'Irube</span></span>
           </p>
         </div>
       </div>
 
+      <!-- MOTEUR DE RECHERCHE GLOBAL & BOUTONS -->
       <div class="flex items-center flex-wrap gap-2">
+        <div class="relative">
+          <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+          <input type="text" id="global-search-input" oninput="handleGlobalSearch(this.value)" placeholder="Rechercher sur tout le site..." class="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs focus:bg-white focus:border-emerald-500 outline-none w-48 sm:w-64 transition shadow-inner">
+        </div>
+
         <button onclick="openRecapModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
-          <i class="fa-solid fa-clipboard-user"></i> Récap. Missions
+          <i class="fa-solid fa-clipboard-user"></i> Récap.
         </button>
 
         <button onclick="saveData(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
@@ -87,7 +92,7 @@
   <!-- MAIN CONTAINER -->
   <div class="flex-1 flex overflow-hidden">
 
-    <!-- SIDEBAR NAVIGATION -->
+    <!-- SIDEBAR NAVIGATION (AVEC DRAG & DROP DES SECTIONS) -->
     <aside class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-sm z-20">
       <div class="p-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Modules & Sections</span>
@@ -146,6 +151,8 @@
     let activeSectionId = null;
     let leafletMaps = {};
     let draggedModuleId = null;
+    let draggedSectionId = null;
+    let globalSearchQuery = "";
 
     function initAppData() {
       eventRef.on('value', (snapshot) => {
@@ -157,6 +164,7 @@
     }
 
     function sanitizeData(data) {
+      if (!data.config) data.config = { title: "Course des Hirondelles 2027", date: "26 juin 2027", location: "Saint-Pierre-d'Irube" };
       if (!data.sections) data.sections = [];
       if (!Array.isArray(data.sections)) data.sections = Object.values(data.sections);
 
@@ -206,10 +214,32 @@
       });
     }
 
+    function updateConfigField(field, val) {
+      appData.config[field] = val.trim();
+      saveData();
+    }
+
     function renderHeader() {
-      document.getElementById('event-title-display').innerText = appData.config.title || "";
-      document.getElementById('event-date-display').innerText = appData.config.date || "";
-      document.getElementById('event-location-display').innerText = appData.config.location || "";
+      // Configuration via header HTML editable direct
+    }
+
+    // --- DRAG & DROP DES SECTIONS DANS LA SIDEBAR ---
+    function handleSectionDragStart(e, secId) {
+      draggedSectionId = secId;
+      e.dataTransfer.effectAllowed = 'move';
+    }
+    function handleSectionDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+    function handleSectionDrop(e, targetSecId) {
+      e.preventDefault();
+      if (!draggedSectionId || draggedSectionId === targetSecId) return;
+      const oldIdx = appData.sections.findIndex(s => s.id === draggedSectionId);
+      const newIdx = appData.sections.findIndex(s => s.id === targetSecId);
+      if (oldIdx > -1 && newIdx > -1) {
+        const [movedSec] = appData.sections.splice(oldIdx, 1);
+        appData.sections.splice(newIdx, 0, movedSec);
+        saveData();
+        renderSidebar();
+      }
     }
 
     function renderSidebar() {
@@ -218,13 +248,40 @@
       appData.sections.forEach((sec) => {
         const isActive = sec.id === activeSectionId;
         const item = document.createElement('div');
-        item.className = `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium cursor-pointer ${isActive ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'}`;
-        item.onclick = () => { activeSectionId = sec.id; renderSidebar(); renderActiveSection(); };
-        item.innerHTML = `<div class="flex items-center space-x-2"><i class="fa-solid ${sec.icon || 'fa-folder'} text-xs"></i><span>${sec.title}</span></div>`;
+        item.draggable = true;
+        item.ondragstart = (e) => handleSectionDragStart(e, sec.id);
+        item.ondragover = handleSectionDragOver;
+        item.ondrop = (e) => handleSectionDrop(e, sec.id);
+
+        item.className = `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all ${isActive ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'}`;
+        item.onclick = (e) => { 
+          if(e.target.closest('.section-drag-handle')) return;
+          activeSectionId = sec.id; renderSidebar(); renderActiveSection(); 
+        };
+        
+        item.innerHTML = `
+          <div class="flex items-center space-x-2 overflow-hidden">
+            <span class="section-drag-handle opacity-50 hover:opacity-100 cursor-grab px-1" title="Glisser pour réorganiser la section"><i class="fa-solid fa-grip-vertical text-[10px]"></i></span>
+            <i class="fa-solid ${sec.icon || 'fa-folder'} text-xs shrink-0"></i>
+            <span class="truncate">${sec.title}</span>
+          </div>
+        `;
         container.appendChild(item);
       });
     }
 
+    // --- MOTEUR DE RECHERCHE GLOBAL ---
+    function handleGlobalSearch(query) {
+      globalSearchQuery = query.trim().toLowerCase();
+      renderActiveSection();
+    }
+
+    function matchSearch(text) {
+      if (!globalSearchQuery) return true;
+      return (text || '').toLowerCase().includes(globalSearchQuery);
+    }
+
+    // --- DRAG & DROP DES MODULES INTERNES ---
     function handleModuleDragStart(e, moduleId) { draggedModuleId = moduleId; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('module-dragging'), 0); }
     function handleModuleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('module-drag-over'); }
     function handleModuleDragLeave(e) { e.currentTarget.classList.remove('module-drag-over'); }
@@ -240,7 +297,6 @@
     function handleModuleDragEnd(e) { if (e.target) e.target.classList.remove('module-dragging'); draggedModuleId = null; }
 
     function wrapModuleDraggable(moduleId, contentHtml, isSingle = false) {
-      // Si la section ne contient qu'un seul module, il prend toute la largeur (`col-span-1 xl:col-span-2`)
       const spanClass = isSingle ? "col-span-1 xl:col-span-2" : "col-span-1";
       return `
         <div draggable="true" 
@@ -273,8 +329,7 @@
       headerBox.innerHTML = `
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-bold text-slate-900 flex items-center gap-3">
-            ${sec.title}
-            <button onclick="renameSection('${sec.id}')" class="text-slate-300 hover:text-emerald-600 transition" title="Renommer"><i class="fa-solid fa-pen text-sm"></i></button>
+            <span contenteditable="true" onblur="updateSectionTitle('${sec.id}', this.innerText)" class="outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier">${sec.title}</span>
             <button onclick="deleteSection('${sec.id}')" class="text-slate-300 hover:text-rose-600 transition" title="Supprimer"><i class="fa-solid fa-trash-can text-sm"></i></button>
           </h2>
         </div>
@@ -302,25 +357,46 @@
       const notesSidebar = document.createElement('div');
       notesSidebar.className = "w-full lg:w-[350px] shrink-0 lg:sticky lg:top-24 z-10"; 
 
-      // --- 3. GÉNÉRATION DES MODULES ---
+      // --- 3. GÉNÉRATION DES MODULES (AVEC FILTRE DE RECHERCHE GLOBALE) ---
       const renderedModules = {};
       
       if (sec.type === 'trace_admin') renderedModules['mod_map'] = generateMapModuleHtml(sec);
       if (sec.type === 'contacts') renderedModules['mod_global_contacts'] = generateGlobalContactsHtml();
 
-      sec.tables.forEach(t => renderedModules['tbl_' + t.id] = generateTableHtml(sec, t));
-      sec.sheets.forEach(s => renderedModules['sht_' + s.id] = generateSheetHtml(sec, s));
-      if (sec.timeline.length > 0) renderedModules['mod_agenda'] = generateAgendaHtml(sec);
-      if (sec.tasks.length > 0) renderedModules['mod_tasks'] = generateTasksHtml(sec);
-      if (sec.localContacts.length > 0) renderedModules['mod_local_contacts'] = generateLocalContactsHtml(sec);
-      if (sec.images.length > 0) renderedModules['mod_images'] = generateImagesHtml(sec);
-      if (sec.attachments.length > 0) renderedModules['mod_attachments'] = generateAttachmentsHtml(sec);
+      sec.tables.forEach(t => {
+        const tHtml = generateTableHtml(sec, t);
+        if (!globalSearchQuery || matchSearch(t.title) || tHtml.toLowerCase().includes(globalSearchQuery)) {
+          renderedModules['tbl_' + t.id] = tHtml;
+        }
+      });
+      sec.sheets.forEach(s => {
+        if (!globalSearchQuery || matchSearch(s.title)) {
+          renderedModules['sht_' + s.id] = generateSheetHtml(sec, s);
+        }
+      });
+      if (sec.timeline.length > 0) {
+        const tHtml = generateAgendaHtml(sec);
+        if (!globalSearchQuery || tHtml.toLowerCase().includes(globalSearchQuery)) renderedModules['mod_agenda'] = tHtml;
+      }
+      if (sec.tasks.length > 0) {
+        const tHtml = generateTasksHtml(sec);
+        if (!globalSearchQuery || tHtml.toLowerCase().includes(globalSearchQuery)) renderedModules['mod_tasks'] = tHtml;
+      }
+      if (sec.localContacts.length > 0) {
+        const tHtml = generateLocalContactsHtml(sec);
+        if (!globalSearchQuery || tHtml.toLowerCase().includes(globalSearchQuery)) renderedModules['mod_local_contacts'] = tHtml;
+      }
+      if (sec.images.length > 0) {
+        renderedModules['mod_images'] = generateImagesHtml(sec);
+      }
+      if (sec.attachments.length > 0) {
+        renderedModules['mod_attachments'] = generateAttachmentsHtml(sec);
+      }
 
       const actualModuleIds = Object.keys(renderedModules);
       actualModuleIds.forEach(id => { if (!sec.layout.includes(id)) sec.layout.push(id); });
       sec.layout = sec.layout.filter(id => actualModuleIds.includes(id));
 
-      // S'il n'y a qu'un seul module dans la section, il prend toute la largeur !
       const isSingleModule = sec.layout.length === 1;
 
       sec.layout.forEach(id => {
@@ -333,8 +409,9 @@
       flexContainer.appendChild(mainGrid);
 
       // --- 4. INSERTION DES NOTES DANS LA SIDEBAR ---
-      if (sec.stickyNotes && sec.stickyNotes.length > 0) {
-        notesSidebar.innerHTML = generateStickyNotesSidebarHtml(sec);
+      const filteredNotes = (sec.stickyNotes || []).filter(n => !globalSearchQuery || matchSearch(n.title) || matchSearch(n.content));
+      if (filteredNotes.length > 0 || !globalSearchQuery) {
+        notesSidebar.innerHTML = generateStickyNotesSidebarHtml(sec, filteredNotes);
         flexContainer.appendChild(notesSidebar);
       }
 
@@ -343,10 +420,9 @@
       if (sec.type === 'trace_admin') setTimeout(() => initMap(sec), 150);
     }
 
-    function renameSection(secId) {
+    function updateSectionTitle(secId, newTitle) {
       const sec = appData.sections.find(s => s.id === secId);
-      const newTitle = prompt("Nouveau nom de la section :", sec.title);
-      if (newTitle && newTitle.trim() !== "") { sec.title = newTitle.trim(); saveData(); renderSidebar(); renderActiveSection(); }
+      if (sec && newTitle.trim() !== "") { sec.title = newTitle.trim(); saveData(); renderSidebar(); }
     }
     function deleteSection(secId) {
       const sec = appData.sections.find(s => s.id === secId);
@@ -375,9 +451,9 @@
     }
 
     // --- NOTES LATÉRALES (SIDEBAR FIXE) ---
-    function generateStickyNotesSidebarHtml(sec) {
+    function generateStickyNotesSidebarHtml(sec, notesToDisplay) {
       let listHtml = '';
-      sec.stickyNotes.forEach(note => {
+      notesToDisplay.forEach(note => {
         listHtml += `
           <div class="p-4 bg-amber-50 border-l-4 border-amber-400 shadow-sm rounded-r-xl space-y-2 relative group mb-4">
             <button onclick="deleteStickyNote('${sec.id}', '${note.id}')" class="absolute top-2 right-2 text-amber-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-xmark"></i></button>
@@ -389,6 +465,7 @@
         <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm relative transition-all flex flex-col h-[calc(100vh-140px)]">
           <div class="border-b border-amber-100 pb-3 mb-4 flex items-center justify-between shrink-0">
             <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-note-sticky text-amber-500"></i> Pense-Bêtes (${sec.stickyNotes.length})</h3>
+            <button onclick="addStickyNote('${sec.id}')" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-semibold transition">+ Note</button>
           </div>
           <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             ${listHtml}
@@ -401,7 +478,7 @@
     function deleteStickyNote(sId, nId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.stickyNotes = s.stickyNotes.filter(x => x.id !== nId); saveData(); renderActiveSection(); } }
 
 
-    // --- TABLEAUX NATIFS avec Couleurs ---
+    // --- TABLEAUX NATIFS (AVEC SUPPRESSION DE COLONNE & COULEURS) ---
     function generateTableHtml(sec, table) {
       if (!table.headers) table.headers = ["Col 1", "Col 2"];
       if (!table.rows) table.rows = [];
@@ -414,7 +491,10 @@
         headersHtml += `<th class="p-0 border-r min-w-[120px]" style="background-color: ${cColor};">
           <div class="flex items-center justify-between p-1 px-2">
             <input type="text" value="${h || ''}" onchange="updateTableHeader('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="cell-input w-full bg-transparent font-bold text-slate-700 text-xs outline-none">
-            <input type="color" value="${cColor}" onchange="updateTableColColor('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="w-4 h-4 p-0 border-0 cursor-pointer shrink-0 rounded color-picker-custom" title="Couleur Colonne">
+            <div class="flex items-center gap-1 shrink-0">
+              <input type="color" value="${cColor}" onchange="updateTableColColor('${sec.id}', '${table.id}', ${colIndex}, this.value)" class="w-4 h-4 p-0 border-0 cursor-pointer rounded color-picker-custom" title="Couleur Colonne">
+              <button onclick="deleteTableColumn('${sec.id}', '${table.id}', ${colIndex})" class="text-slate-400 hover:text-rose-600 px-1 text-[10px]" title="Supprimer cette colonne"><i class="fa-solid fa-xmark"></i></button>
+            </div>
           </div>
         </th>`;
       });
@@ -505,6 +585,16 @@
     function addTableColumn(sId, tId) { 
       const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
       if(t) { t.headers.push("Nouvelle"); t.rows.forEach(r => r.push("")); t.colColors.push("#f8fafc"); saveData(); renderActiveSection(); } 
+    }
+    function deleteTableColumn(sId, tId, colIndex) {
+      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId);
+      if (t) {
+        if (t.headers.length <= 1) { alert("Impossible de supprimer la dernière colonne."); return; }
+        t.headers.splice(colIndex, 1);
+        t.colColors.splice(colIndex, 1);
+        t.rows.forEach(r => r.splice(colIndex, 1));
+        saveData(); renderActiveSection();
+      }
     }
     function deleteTableRow(sId, tId, r) { 
       const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
