@@ -141,8 +141,8 @@
       config: { title: "Course des Hirondelles 2027", date: "26 juin 2027", location: "Saint-Pierre-d'Irube" },
       contacts: [],
       sections: [
-        { id: "sec-0", title: "Planning Jour J (Agenda)", icon: "fa-calendar-check", type: "agenda", layout: [], timeline: [], stickyNotes: [] },
-        { id: "sec-1", title: "1. Course & Tracé", icon: "fa-map-location-dot", type: "trace_admin", layout: [], gpxTracks: [], tasks: [], stickyNotes: [] }
+        { id: "sec-0", title: "Planning Jour J (Agenda)", icon: "fa-calendar-check", type: "agenda", layout: [], timeline: [], stickyNotes: [], moduleTitles: {} },
+        { id: "sec-1", title: "1. Course & Tracé", icon: "fa-map-location-dot", type: "trace_admin", layout: [], gpxTracks: [], tasks: [], stickyNotes: [], moduleTitles: {} }
       ]
     };
 
@@ -170,6 +170,7 @@
       data.sections.forEach(sec => {
         if (!sec.layout) sec.layout = [];
         sec.layout = sec.layout.filter(id => id !== 'mod_notes'); 
+        if (!sec.moduleTitles) sec.moduleTitles = {};
 
         if (!sec.tables) sec.tables = []; else {
           sec.tables = Object.values(sec.tables);
@@ -218,6 +219,15 @@
       saveData();
     }
 
+    function updateModuleTitle(secId, modId, newTitle) {
+      const sec = appData.sections.find(s => s.id === secId);
+      if (sec) {
+        if (!sec.moduleTitles) sec.moduleTitles = {};
+        sec.moduleTitles[modId] = newTitle.trim();
+        saveData();
+      }
+    }
+
     function handleSectionDragStart(e, secId) {
       draggedSectionId = secId;
       e.dataTransfer.effectAllowed = 'move';
@@ -264,15 +274,41 @@
       });
     }
 
-    // --- MOTEUR DE RECHERCHE ROBUSTE (DIRECT SUR LES DONNÉES) ---
+    // --- MOTEUR DE RECHERCHE GLOBAL TRANS-SECTIONS ---
     function handleGlobalSearch(query) {
       globalSearchQuery = query.trim().toLowerCase();
+      if (globalSearchQuery.length > 0) {
+        for (let sec of appData.sections) {
+          if (sectionHasMatch(sec, globalSearchQuery)) {
+            if (activeSectionId !== sec.id) {
+              activeSectionId = sec.id;
+              renderSidebar();
+            }
+            break;
+          }
+        }
+      }
       renderActiveSection();
     }
 
     function checkMatch(text) {
       if (!globalSearchQuery) return true;
       return (text || '').toLowerCase().includes(globalSearchQuery);
+    }
+
+    function sectionHasMatch(sec, query) {
+      if (checkMatch(sec.title)) return true;
+      if (sec.moduleTitles && Object.values(sec.moduleTitles).some(t => checkMatch(t))) return true;
+      if (sec.gpxTracks && sec.gpxTracks.some(t => checkMatch(t.name))) return true;
+      if (sec.tables && sec.tables.some(t => checkMatch(t.title) || t.headers.some(h => checkMatch(h)) || t.rows.some(r => r.some(c => checkMatch(c))))) return true;
+      if (sec.sheets && sec.sheets.some(s => checkMatch(s.title))) return true;
+      if (sec.timeline && sec.timeline.some(item => checkMatch(item.activity) || checkMatch(item.time))) return true;
+      if (sec.tasks && sec.tasks.some(task => checkMatch(task.name) || checkMatch(task.status))) return true;
+      if (sec.localContacts && sec.localContacts.some(c => checkMatch(c.name) || checkMatch(c.emplacement) || checkMatch(c.phone))) return true;
+      if (sec.images && sec.images.some(img => checkMatch(img.name))) return true;
+      if (sec.attachments && sec.attachments.some(att => checkMatch(att.name))) return true;
+      if (sec.stickyNotes && sec.stickyNotes.some(n => checkMatch(n.title) || checkMatch(n.content))) return true;
+      return false;
     }
 
     function handleModuleDragStart(e, moduleId) { draggedModuleId = moduleId; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('module-dragging'), 0); }
@@ -351,12 +387,12 @@
       const renderedModules = {};
       
       if (sec.type === 'trace_admin') {
-        const hasMapMatch = !globalSearchQuery || sec.gpxTracks.some(trk => checkMatch(trk.name));
+        const hasMapMatch = !globalSearchQuery || (sec.moduleTitles?.['mod_map'] || 'Cartes des Tracés (GPX)').toLowerCase().includes(globalSearchQuery) || sec.gpxTracks.some(trk => checkMatch(trk.name));
         if (hasMapMatch) renderedModules['mod_map'] = generateMapModuleHtml(sec);
       }
       if (sec.type === 'contacts') {
-        const hasContactMatch = !globalSearchQuery || appData.contacts.some(c => checkMatch(c.name) || checkMatch(c.org) || checkMatch(c.phone));
-        if (hasContactMatch) renderedModules['mod_global_contacts'] = generateGlobalContactsHtml();
+        const hasContactMatch = !globalSearchQuery || (sec.moduleTitles?.['mod_global_contacts'] || 'Contacts').toLowerCase().includes(globalSearchQuery) || appData.contacts.some(c => checkMatch(c.name) || checkMatch(c.org) || checkMatch(c.phone));
+        if (hasContactMatch) renderedModules['mod_global_contacts'] = generateGlobalContactsHtml(sec);
       }
 
       sec.tables.forEach(t => {
@@ -369,27 +405,32 @@
       });
 
       if (sec.timeline.length > 0) {
-        const matchAgenda = !globalSearchQuery || sec.timeline.some(item => checkMatch(item.activity) || checkMatch(item.time));
+        const agendaTitle = sec.moduleTitles?.['mod_agenda'] || 'Chronologie';
+        const matchAgenda = !globalSearchQuery || agendaTitle.toLowerCase().includes(globalSearchQuery) || sec.timeline.some(item => checkMatch(item.activity) || checkMatch(item.time));
         if (matchAgenda) renderedModules['mod_agenda'] = generateAgendaHtml(sec);
       }
 
       if (sec.tasks.length > 0) {
-        const matchTasks = !globalSearchQuery || sec.tasks.some(task => checkMatch(task.name) || checkMatch(task.status));
+        const tasksTitle = sec.moduleTitles?.['mod_tasks'] || 'Tâches';
+        const matchTasks = !globalSearchQuery || tasksTitle.toLowerCase().includes(globalSearchQuery) || sec.tasks.some(task => checkMatch(task.name) || checkMatch(task.status));
         if (matchTasks) renderedModules['mod_tasks'] = generateTasksHtml(sec);
       }
 
       if (sec.localContacts.length > 0) {
-        const matchLocal = !globalSearchQuery || sec.localContacts.some(c => checkMatch(c.name) || checkMatch(c.emplacement) || checkMatch(c.phone));
+        const localCName = sec.moduleTitles?.['mod_local_contacts'] || 'Bénévoles Section';
+        const matchLocal = !globalSearchQuery || localCName.toLowerCase().includes(globalSearchQuery) || sec.localContacts.some(c => checkMatch(c.name) || checkMatch(c.emplacement) || checkMatch(c.phone));
         if (matchLocal) renderedModules['mod_local_contacts'] = generateLocalContactsHtml(sec);
       }
 
       if (sec.images.length > 0) {
-        const matchImages = !globalSearchQuery || sec.images.some(img => checkMatch(img.name));
+        const imgTitle = sec.moduleTitles?.['mod_images'] || 'Images';
+        const matchImages = !globalSearchQuery || imgTitle.toLowerCase().includes(globalSearchQuery) || sec.images.some(img => checkMatch(img.name));
         if (matchImages) renderedModules['mod_images'] = generateImagesHtml(sec);
       }
 
       if (sec.attachments.length > 0) {
-        const matchAtt = !globalSearchQuery || sec.attachments.some(att => checkMatch(att.name));
+        const attTitle = sec.moduleTitles?.['mod_attachments'] || 'Pièces Jointes';
+        const matchAtt = !globalSearchQuery || attTitle.toLowerCase().includes(globalSearchQuery) || sec.attachments.some(att => checkMatch(att.name));
         if (matchAtt) renderedModules['mod_attachments'] = generateAttachmentsHtml(sec);
       }
 
@@ -436,7 +477,7 @@
       const title = prompt("Nom de la nouvelle section :");
       if (title) {
         const newId = 'sec_' + Date.now();
-        appData.sections.push({ id: newId, title: title, type: "standard", layout: [], tasks: [], stickyNotes: [], timeline: [], sheets: [], tables: [], localContacts: [], images: [], attachments: [], gpxTracks: [] });
+        appData.sections.push({ id: newId, title: title, type: "standard", layout: [], tasks: [], stickyNotes: [], timeline: [], sheets: [], tables: [], localContacts: [], images: [], attachments: [], gpxTracks: [], moduleTitles: {} });
         if (!activeSectionId) activeSectionId = newId;
         saveData(); renderSidebar(); renderActiveSection();
       }
@@ -459,10 +500,11 @@
             <textarea placeholder="Contenu..." onchange="updateStickyNote('${sec.id}', '${note.id}', 'content', this.value)" class="w-full text-amber-800 text-sm bg-transparent border-none resize-none focus:bg-white rounded min-h-[100px] outline-none p-1">${note.content || ''}</textarea>
           </div>`;
       });
+      const stickyTitle = sec.moduleTitles?.['mod_sticky_notes'] || `Pense-Bêtes (${sec.stickyNotes.length})`;
       return `
         <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm relative transition-all flex flex-col h-[calc(100vh-140px)]">
           <div class="border-b border-amber-100 pb-3 mb-4 flex items-center justify-between shrink-0">
-            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-note-sticky text-amber-500"></i> Pense-Bêtes (${sec.stickyNotes.length})</h3>
+            <h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_sticky_notes', this.innerText)" class="font-bold text-slate-800 text-sm flex items-center gap-2 outline-none hover:bg-amber-50 rounded px-1" title="Cliquer pour modifier le titre"><i class="fa-solid fa-note-sticky text-amber-500"></i> <span>${stickyTitle}</span></h3>
             <button onclick="addStickyNote('${sec.id}')" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded font-semibold transition">+ Note</button>
           </div>
           <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
@@ -608,9 +650,10 @@
           mapsHtml += `<div class="mb-5 border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white relative z-0"><div class="flex justify-between items-center bg-slate-50 p-2 border-b border-slate-200"><span class="font-bold text-emerald-700 text-xs"><i class="fa-solid fa-route mr-1"></i> ${trk.name}</span><button onclick="deleteGPXTrack('${sec.id}', '${trk.id}')" class="text-rose-500 hover:text-rose-700 px-2 py-1"><i class="fa-solid fa-trash-can"></i></button></div><div id="map-${trk.id}" class="leaflet-map-container"></div></div>`;
         });
       }
+      const mapTitle = sec.moduleTitles?.['mod_map'] || 'Cartes des Tracés (GPX)';
       return `
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-4 pr-6">
-          <div><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-map text-emerald-600"></i> Cartes des Tracés (GPX)</h3></div>
+          <div><h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_map', this.innerText)" class="font-bold text-slate-800 text-sm flex items-center gap-2 outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier le titre"><i class="fa-solid fa-map text-emerald-600"></i> <span>${mapTitle}</span></h3></div>
           <label class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition"><i class="fa-solid fa-file-code"></i> Ajouter un GPX<input type="file" multiple onchange="handleGPXUpload(event, '${sec.id}')" accept=".gpx" class="hidden"></label>
         </div>
         ${mapsHtml}
@@ -620,12 +663,19 @@
     function deleteGPXTrack(secId, trackId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.gpxTracks = sec.gpxTracks.filter(t => t.id !== trackId); saveData(); renderActiveSection(); } }
     function initMap(sec) { Object.values(leafletMaps).forEach(m => m.remove()); leafletMaps = {}; sec.gpxTracks.forEach((trk) => { const mapContainerId = 'map-' + trk.id; const container = document.getElementById(mapContainerId); if (!container) return; const map = L.map(mapContainerId).setView([43.4633, -1.4519], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map); const parser = new DOMParser(); const xmlDoc = parser.parseFromString(trk.data, "text/xml"); const points = []; xmlDoc.querySelectorAll("trkpt, wpt, rtept").forEach(pt => { const lat = parseFloat(pt.getAttribute("lat")); const lon = parseFloat(pt.getAttribute("lon")); if (!isNaN(lat) && !isNaN(lon)) points.push([lat, lon]); }); if (points.length > 0) { const polyline = L.polyline(points, { color: '#16a34a', weight: 4 }).addTo(map); map.fitBounds(polyline.getBounds(), { padding: [20, 20] }); } leafletMaps[trk.id] = map; }); }
 
-    function generateGlobalContactsHtml() {
+    function generateGlobalContactsHtml(sec) {
       let rows = ''; appData.contacts.forEach(c => { rows += `<tr class="border-b border-slate-100 last:border-none"><td class="p-2"><input type="text" value="${c.name || ''}" onchange="updateGlobalContactField('${c.id}', 'name', this.value)" class="bg-transparent font-bold w-full focus:bg-white rounded px-1 text-xs"></td><td class="p-2"><input type="text" value="${c.org || ''}" onchange="updateGlobalContactField('${c.id}', 'org', this.value)" class="bg-transparent w-full focus:bg-white rounded px-1 text-xs"></td><td class="p-2"><input type="text" value="${c.phone || ''}" onchange="updateGlobalContactField('${c.id}', 'phone', this.value)" class="bg-transparent w-full focus:bg-white rounded px-1 text-xs"></td><td class="p-2 text-right"><button onclick="deleteGlobalContact('${c.id}')" class="text-slate-400 hover:text-rose-600 px-2"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; });
       let addOptions = `<option value="">+ Depuis la base (CSV)...</option>`;
       [...IMPORTED_CSV_CONTACTS].sort((a,b) => a.name.localeCompare(b.name)).forEach((c, idx) => { addOptions += `<option value="${idx}">${c.name}</option>`; });
+      const contactTitle = sec.moduleTitles?.['mod_global_contacts'] || `Contacts (${appData.contacts.length})`;
       return `
-        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3 pr-6"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-address-book text-emerald-600"></i> Contacts (${appData.contacts.length})</h3><div class="flex gap-2"><select onchange="addGlobalContactFromCSV(this.value); this.value='';" class="bg-white border rounded p-1.5 text-xs">${addOptions}</select><button onclick="addGlobalContact()" class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1.5 rounded-lg border">+ Nouveau</button></div></div>
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3 pr-6">
+          <h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_global_contacts', this.innerText)" class="font-bold text-slate-800 text-sm flex items-center gap-2 outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier le titre"><i class="fa-solid fa-address-book text-emerald-600"></i> <span>${contactTitle}</span></h3>
+          <div class="flex gap-2">
+            <select onchange="addGlobalContactFromCSV(this.value); this.value='';" class="bg-white border rounded p-1.5 text-xs">${addOptions}</select>
+            <button onclick="addGlobalContact()" class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1.5 rounded-lg border">+ Nouveau</button>
+          </div>
+        </div>
         <div class="overflow-x-auto mt-4"><table class="w-full text-left text-xs"><thead class="bg-slate-50 text-slate-500 uppercase text-[10px]"><tr><th class="p-2">Nom</th><th class="p-2">Entité</th><th class="p-2">Téléphone</th><th class="p-2 text-right">Action</th></tr></thead><tbody>${rows}</tbody></table></div>
       `;
     }
@@ -651,8 +701,9 @@
         
         listHtml += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs"><div class="flex justify-between items-center gap-2"><input type="text" value="${task.name || ''}" onchange="updateTaskField('${sec.id}', '${task.id}', 'name', this.value)" class="font-bold text-slate-900 bg-transparent flex-1 focus:bg-white rounded px-1"><div class="flex gap-2"><select onchange="updateTaskField('${sec.id}', '${task.id}', 'status', this.value)" class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${statusColors[task.status || 'À faire']}"><option value="À faire" ${(task.status||'À faire') === 'À faire' ? 'selected' : ''}>À faire</option><option value="En cours" ${task.status === 'En cours' ? 'selected' : ''}>En cours</option><option value="Validé" ${task.status === 'Validé' ? 'selected' : ''}>Validé</option></select><button onclick="deleteTask('${sec.id}', '${task.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button></div></div><div class="flex flex-wrap items-center gap-1.5 pt-1">${assigneesHtml}<select onchange="addTaskAssignee('${sec.id}', '${task.id}', this.value); this.value='';" class="bg-white border rounded px-1 py-0.5 outline-none">${selectOptions}</select></div></div>`;
       });
+      const tasksTitle = sec.moduleTitles?.['mod_tasks'] || `Tâches (${sec.tasks.length})`;
       return `
-        <div class="border-b pb-3 mb-3 pr-6"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-600"></i> Tâches (${sec.tasks.length})</h3></div>
+        <div class="border-b pb-3 mb-3 pr-6"><h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_tasks', this.innerText)" class="font-bold text-slate-800 text-sm flex items-center gap-2 outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier le titre"><i class="fa-solid fa-list-check text-emerald-600"></i> <span>${tasksTitle}</span></h3></div>
         <div class="space-y-3">${listHtml}</div>
       `;
     }
@@ -669,8 +720,9 @@
         getAvailableContactsForTask(sec.id).forEach(c => { selectOptions += `<option value="${c.id}" ${c.id === item.resp ? 'selected' : ''}>${c.name}</option>`; });
         listHtml += `<div class="flex flex-wrap items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs"><input type="time" value="${item.time || ''}" onchange="updateAgendaItem('${sec.id}', '${item.id}', 'time', this.value)" class="w-20 font-bold text-emerald-700 bg-white border rounded p-1 text-center"><input type="text" placeholder="Activité" value="${item.activity || ''}" onchange="updateAgendaItem('${sec.id}', '${item.id}', 'activity', this.value)" class="flex-1 min-w-[120px] font-medium bg-white border rounded p-1"><select onchange="updateAgendaItem('${sec.id}', '${item.id}', 'resp', this.value)" class="bg-white border rounded p-1 text-slate-700 min-w-[140px]">${selectOptions}</select><button onclick="deleteAgendaItem('${sec.id}', '${item.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button></div>`;
       });
+      const agendaTitle = sec.moduleTitles?.['mod_agenda'] || `Chronologie (${sec.timeline.length})`;
       return `
-        <div class="border-b pb-3 mb-3 pr-6"><h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-clock text-rose-500"></i> Chronologie (${sec.timeline.length})</h3></div>
+        <div class="border-b pb-3 mb-3 pr-6"><h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_agenda', this.innerText)" class="font-bold text-slate-800 text-sm flex items-center gap-2 outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier le titre"><i class="fa-solid fa-clock text-rose-500"></i> <span>${agendaTitle}</span></h3></div>
         <div class="space-y-2">${listHtml}</div>
       `;
     }
@@ -693,8 +745,15 @@
       let addOptions = `<option value="">+ Depuis la liste...</option><optgroup label="CSV">`;
       [...IMPORTED_CSV_CONTACTS].sort((a,b)=>a.name.localeCompare(b.name)).forEach((c, idx) => { addOptions += `<option value="csv_${idx}">${c.name}</option>`; }); addOptions += `</optgroup>`;
       if(appData.contacts.length>0) { addOptions += `<optgroup label="Evénement">`; appData.contacts.forEach(c => { addOptions += `<option value="evt_${c.id}">${c.name}</option>`; }); addOptions += `</optgroup>`; }
+      const localCName = sec.moduleTitles?.['mod_local_contacts'] || 'Bénévoles Section';
       return `
-        <div class="flex justify-between items-center border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-indigo-500"><i class="fa-solid fa-users"></i> Bénévoles Section</h3><div class="flex gap-2"><select onchange="addLocalContactFromList('${sec.id}', this.value); this.value='';" class="bg-white border rounded p-1 text-xs">${addOptions}</select><button onclick="addLocalContact('${sec.id}')" class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded border">+ Nouveau</button></div></div>
+        <div class="flex justify-between items-center border-b pb-2 mb-3 pr-6">
+          <h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_local_contacts', this.innerText)" class="font-bold text-sm text-indigo-500 outline-none hover:bg-slate-50 rounded px-1 flex items-center gap-2" title="Cliquer pour modifier le titre"><i class="fa-solid fa-users"></i> <span>${localCName}</span></h3>
+          <div class="flex gap-2">
+            <select onchange="addLocalContactFromList('${sec.id}', this.value); this.value='';" class="bg-white border rounded p-1 text-xs">${addOptions}</select>
+            <button onclick="addLocalContact('${sec.id}')" class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded border">+ Nouveau</button>
+          </div>
+        </div>
         <div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="text-slate-500 bg-slate-50 uppercase text-[10px]"><tr><th class="p-2">Nom</th><th class="p-2">Emplacement</th><th class="p-2">Tél</th><th class="p-2"></th></tr></thead><tbody>${rows}</tbody></table></div>
       `;
     }
@@ -705,8 +764,9 @@
 
     function generateImagesHtml(sec) { 
       let g = ''; (sec.images || []).forEach(img => g += `<div class="relative group aspect-video bg-slate-100 rounded-xl overflow-hidden"><img src="${img.dataUrl}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3"><button onclick="deleteImage('${sec.id}', '${img.id}')" class="bg-rose-500 text-white p-2 rounded-full"><i class="fa-solid fa-trash"></i></button></div></div>`); 
+      const imgTitle = sec.moduleTitles?.['mod_images'] || 'Images';
       return `
-        <div class="border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-blue-500"><i class="fa-solid fa-image"></i> Images</h3></div>
+        <div class="border-b pb-2 mb-3 pr-6"><h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_images', this.innerText)" class="font-bold text-sm text-blue-500 outline-none hover:bg-slate-50 rounded px-1 flex items-center gap-2" title="Cliquer pour modifier le titre"><i class="fa-solid fa-image"></i> <span>${imgTitle}</span></h3></div>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">${g}</div>
       `; 
     }
@@ -715,8 +775,9 @@
 
     function generateAttachmentsHtml(sec) { 
       let l = ''; (sec.attachments || []).forEach(att => l += `<div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-xs"><span>${att.name}</span> <button onclick="deleteAttachment('${sec.id}', '${att.id}')" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></div>`); 
+      const attTitle = sec.moduleTitles?.['mod_attachments'] || 'Pièces Jointes';
       return `
-        <div class="border-b pb-2 mb-3 pr-6"><h3 class="font-bold text-sm text-purple-500"><i class="fa-solid fa-paperclip"></i> Pièces Jointes</h3></div>
+        <div class="border-b pb-2 mb-3 pr-6"><h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_attachments', this.innerText)" class="font-bold text-sm text-purple-500 outline-none hover:bg-slate-50 rounded px-1 flex items-center gap-2" title="Cliquer pour modifier le titre"><i class="fa-solid fa-paperclip"></i> <span>${attTitle}</span></h3></div>
         <div class="grid gap-2">${l}</div>
       `; 
     }
