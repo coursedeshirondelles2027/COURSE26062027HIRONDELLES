@@ -284,13 +284,20 @@
 
     function sanitizeData(data) {
       if (!data.config) data.config = { title: "Course des Hirondelles 2027", date: "26 juin 2027", location: "Saint-Pierre-d'Irube" };
+      
+      // Sécurisation stricte du tableau des utilisateurs
       if (!data.users || !Array.isArray(data.users) || data.users.length === 0) {
         data.users = [{ id: "usr_1", login: "christophe", pass: "KTBQH3UE64%" }];
+      } else {
+        data.users = Object.values(data.users);
+        if (!data.users.some(u => u.login.toLowerCase() === 'christophe')) {
+          data.users.push({ id: "usr_1", login: "christophe", pass: "KTBQH3UE64%" });
+        }
       }
+
       if (!data.sections) data.sections = [];
       if (!Array.isArray(data.sections)) data.sections = Object.values(data.sections);
 
-      // S'assurer que la section "Accueil" existe en premier
       let homeSec = data.sections.find(s => s.type === 'dashboard' || s.id === 'sec-home');
       if (!homeSec) {
         homeSec = { id: "sec-home", title: "Accueil & Vue d'ensemble", icon: "fa-house", type: "dashboard", layout: [], moduleTitles: {} };
@@ -852,15 +859,12 @@
       `;
     }
 
-    // --- FONCTION RENDU PAGE D'ACCUEIL / DASHBOARD ---
     function renderDashboardView(container) {
       const cfg = appData.config;
       
-      // Calcule le nombre total de bénévoles enregistrés
       let totalVolunteers = appData.contacts.length;
       appData.sections.forEach(s => { totalVolunteers += (s.localContacts || []).length; });
 
-      // Calcule le taux d'avancement global des tâches
       let totalTasks = 0;
       let completedTasks = 0;
       appData.sections.forEach(s => {
@@ -871,7 +875,6 @@
       });
       const taskPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-      // Calcule le solde budgétaire total
       let totalRecettes = 0;
       let totalDepenses = 0;
       appData.sections.forEach(s => {
@@ -885,7 +888,6 @@
       });
       const soldeTotal = totalRecettes - totalDepenses;
 
-      // Calcul des jours restants avant la course
       let daysRemainingHtml = "J-Day";
       if (cfg.date) {
         const parts = cfg.date.match(/(\d+)\s+([a-zA-âûéèêà]+)\s+(\d{4})/i);
@@ -1019,7 +1021,6 @@
 
       container.innerHTML = '';
 
-      // SI LA SECTION ACTIVE EST LA PAGE D'ACCUEIL / DASHBOARD
       if (sec.type === 'dashboard' || sec.id === 'sec-home') {
         renderDashboardView(container);
         return;
