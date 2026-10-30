@@ -248,7 +248,8 @@
     const db = firebase.database();
     const eventRef = db.ref('eventData');
 
-    const IMPORTED_CSV_CONTACTS = [{"name": "Alexandre Hirth", "email": "Alexandre.hirth@gmail.com", "phone": "0689863849"}, {"name": "Alexandre Le Riche", "email": "Alex.leriche649990@gmail.com", "phone": "0632240399"}, {"name": "Alexia Nascimento", "email": "Alexia64nasci@gmail.com", "phone": "0650952297"}, {"name": "Aline Mogaburu", "email": "Aline.mogaburu@hotmail.fr", "phone": "0680570156"}, {"name": "Amandine Frigot-Duviella", "email": "Am.duv@live.fr", "phone": "0630385339"}, {"name": "Amélie Blanc", "email": "Blancamelie64@gmail.com", "phone": "0683113640"}, {"name": "Angelique Mazzer", "email": "Mazzer64340@gmail.com", "phone": "0637377079"}, {"name": "Armelle Roncin", "email": "Armelle.roncin@live.fr", "phone": "0603391622"}, {"name": "Beñat Abeberry", "email": "Bernardabeberry@gmail.com", "phone": "0688352487"}, {"name": "Benoît Fournet", "email": "Benfournet@hotmail.fr", "phone": "0610015687"}, {"name": "Bertrand Pecastaing", "email": "B.pecastaing@hotmail.fr", "phone": "0665533209"}, {"name": "Brad Butryn", "email": "Butryn.brad@hotmail.com", "phone": "0766425844"}, {"name": "Camille Lamarque", "email": "Camillelamarque2595@gmail.com", "phone": "0677093984"}, {"name": "Carine Cohere", "email": "Carine.cohere@gmail.com", "phone": "0616890531"}, {"name": "Carole Longueira", "email": "Carole.longueira64@orange.fr", "phone": "0627257573"}, {"name": "Cecile Labat", "email": "Xexili1@hotmail.com", "phone": "0687708373"}, {"name": "Céline Noussitou", "email": "Celinenoussitou@gmail.com", "phone": "0688164980"}, {"name": "Chloé Leurgorry", "email": "Chloe.leurgorrypro@gmail.com", "phone": "0786830786"}, {"name": "Christelle Harismendy", "email": "Christelleharis@gmail.com", "phone": "0687956619"}, {"name": "Christine Fessard", "email": "Fessard_christine@yahoo.fr", "phone": "0688594657"}, {"name": "Christophe Ducournau", "email": "Cdn.au@pm.me", "phone": "0633173421"}, {"name": "Christophe Petit", "email": "Bdeco64@gmail.com", "phone": "0663697502"}, {"name": "Clara Gomez", "email": "Claragomez_40@hotmail.fr", "phone": "0764819766"}, {"name": "Clémentine Defente", "email": "Clementine.defente@gmail.com", "phone": "0619720683"}, {"name": "Cloe Perrochon", "email": "Cloe.perrochon@hotmail.fr", "phone": "0672270996"}, {"name": "Damien Delannoy", "email": "Damiendelannoy1@gmail.com", "phone": "0765757152"}, {"name": "David Hondarrague", "email": "Hondarraguedavid@gmail.com", "phone": "0661365930"}, {"name": "Delphine Sorondo", "email": "D.sorondo@icloud.com", "phone": "0689260368"}, {"name": "Elise Kéo Singharath", "email": "Ek4sing@hotmail.fr", "phone": "0664976671"}, {"name": "Elodie Chibrac", "email": "Elodie.hordiller@gmail.com", "phone": "0659315546"}, {"name": "Emilie Novion", "email": "Emilienovion@hotmail.com", "phone": "0674679548"}, {"name": "Fabienne Darrigol", "email": "Fabdarrigol@gmail.com", "phone": "0675962108"}, {"name": "Fabienne Guignard", "email": "Fabienneguignard@outlook.fr", "phone": "0674581289"}, {"name": "Fabrice Laplace", "email": "Jademarie72@hotmail.fr", "phone": "0659508260"}, {"name": "Florence Aguerre", "email": "Aguerreflo@hotmail.fr", "phone": "0630281974"}, {"name": "Florence Dufau", "email": "Floflobayonna@gmail.com", "phone": "0621912926"}, {"name": "Floriane Nascimento", "email": "Floriane.nascimento@hotmail.fr", "phone": "0664559226"}, {"name": "Frederic Hinx", "email": "Hfrederic40@gmail.com", "phone": "0767504323"}, {"name": "Gaelle Daum", "email": "Gaelle.daum@gmail.com", "phone": "0683545494"}, {"name": "Gaylord Janot", "email": "Gaylord.janot@sfr.fr", "phone": "0603058742"}, {"name": "Gérard Hamcha", "email": "Hamcha.gerard@orange.fr", "phone": "0630846242"}, {"name": "Grégory Gaillardet", "email": "Gaillard64@hotmail.com", "phone": "0689914632"}, {"name": "Isabelle Hervouët", "email": "Ipague@yahoo.fr", "phone": "0676744487"}, {"name": "Jean Louis Lespine", "email": "Jlespine64@gmail.com", "phone": "0662897238"}, {"name": "Jean-Marc Floureck", "email": "Floureck@hotmail.com", "phone": "0614645752"}, {"name": "Jerome Cresson", "email": "Etj@laposte.net", "phone": "0617390691"}, {"name": "Jérôme Mandin", "email": "Jm@syspro.fr", "phone": "06 30 10 42 28"}, {"name": "Jonathan Gonzalez", "email": "Jon1985@hotmail.fr", "phone": "0677767920"}, {"name": "Julie Bricard", "email": "Jubricard@hotmail.fr", "phone": "0626370559"}, {"name": "Julie Poublan", "email": "Julie.poublan@gmail.com", "phone": "0621502905"}, {"name": "Julien Paillard", "email": "Julienpaillard2507@gmail.com", "phone": "0767465345"}, {"name": "Katia Nascimento", "email": "Katia.nasci64@hotmail.com", "phone": "0650952505"}, {"name": "Laura Clochard", "email": "Clochard.laura79@gmail.com", "phone": "0677832382"}, {"name": "Laura Lafitte", "email": "Laura.lafitte40@gmail.com", "phone": "0646727485"}, {"name": "Laurent Berdou", "email": "Berdoulaurent@gmail.com", "phone": "0676480451"}, {"name": "Laurinda Gonçalves", "email": "Laurinda.goncalves917@dbmail.com", "phone": "0631632698"}, {"name": "Léa Lecouffe", "email": "Lecouffelea@orange.fr", "phone": "0648223217"}, {"name": "Louise Romero", "email": "Louise.romero@sfr.fr", "phone": "0615392085"}, {"name": "Lucie Heraud", "email": "Lucie.heraud@gmail.com", "phone": "0671233176"}, {"name": "Lucile Julienne", "email": "Julienne.lucile@orange.fr", "phone": "0683338724"}, {"name": "Maeva Grondard", "email": "Grondardmaeva@gmail.com", "phone": "0783319696"}, {"name": "Maialen Pessans", "email": "Mpessans@yahoo.fr", "phone": "0786555926"}, {"name": "Mailys Diribarne", "email": "Mailys.diribarne.sta@gmail.com", "phone": "0689375061"}, {"name": "Marc Duperthuis", "email": "Marc.duperthuis@gmail.com", "phone": "0612726173"}, {"name": "Marc Etcheverry", "email": "Macopec@hotmail.fr", "phone": "0673952300"}, {"name": "Marcel Leurgorry", "email": "Mgleurgorry@gmail.com", "phone": "0687011200"}, {"name": "Margaux Vicogne", "email": "Margauxvicogne4@gmail.com", "phone": "0646327868"}, {"name": "Marie Lorenzo", "email": "Marielorenzo64@yahoo.fr", "phone": "0688737257"}, {"name": "Marie Nougue", "email": "Marie_lauga@hotmail.com", "phone": "0676914438"}, {"name": "Marie Sanglar", "email": "Marie.picard64@gmail.com", "phone": "0618595049"}, {"name": "Marion Bernard", "email": "Marion-Bernard@hotmail.fr", "phone": "0681956363"}, {"name": "Marjorie Courtade", "email": "Courtademarjorie@yahoo.fr", "phone": "0786484185"}, {"name": "Matthieu Betachet", "email": "Matthieu.betachet@gmail.com", "phone": "0674314406"}, {"name": "Michele Fischer", "email": "Ma.fischer64@yahoo.com", "phone": "0661799511"}, {"name": "Mirentchu Biret", "email": "Toubalmirentchu@gmail.com", "phone": "0683328334"}, {"name": "Muriel Bordères", "email": "Mumu-64@hotmail.fr", "phone": "0689434636"}, {"name": "Nathalie Earnshaw", "email": "Natearnshaw@yahoo.fr", "phone": "0637697957"}, {"name": "Nelly Moreau", "email": "Nelmoreau@hotmail.com", "phone": "0676948319"}, {"name": "Nicolas De La Parra", "email": "Nicoccino@hotmail.fr", "phone": "0625763288"}, {"name": "Nicolas Gorostegui", "email": "Nicogoros64@gmail.com", "phone": "0614716644"}, {"name": "Ninon Brousse", "email": "Brousseninon@gmail.com", "phone": "0677416126"}, {"name": "Olivier Cassagne", "email": "Cassagneolivier@orange.fr", "phone": "0630252280"}, {"name": "Olivier Picard", "email": "Picardcorinne@bbox.fr", "phone": "0658876044"}, {"name": "Philippe Larrode", "email": "Larrodephilippe@gmail.com", "phone": "0622592933"}, {"name": "Prune Tagot", "email": "Tagot.prune@gmail.com", "phone": "0627725807"}, {"name": "Sandrine Pouy", "email": "Sand.pouy@neuf.fr", "phone": "0663200064"}, {"name": "Stephane Contacolli", "email": "Stephanecontacolli@gmail.com", "phone": "0695151516"}, {"name": "Stéphane Da Silva", "email": "Sda-Silva@sfr.fr", "phone": "0630239320"}, {"name": "Stéphanie Hargous", "email": "Diethargous@gmail.com", "phone": "0621370567"}, {"name": "Stéphanie Leonard", "email": "Mscj.leonard@gmail.com", "phone": "0685152486"}, {"name": "Thierry Hayet", "email": "Titi.hyt@sfr.fr", "phone": "0676117562"}, {"name": "Thierry Saurais", "email": "Thierry.saurais@orange.fr", "phone": "0671071268"}, {"name": "Thomas Bergerot", "email": "Thomasbergerot@free.fr", "phone": "0608886466"}, {"name": "Thomas Lalande", "email": "Thomaslalande40@icloud.com", "phone": "0638673940"}, {"name": "Thomas Poilvé", "email": "Thomas.poilve@gmail.com", "phone": "0667288343"}, {"name": "Vincent Capdeville", "email": "Vinct64@msn.com", "phone": "0643268308"}, {"name": "Vincent Romatet", "email": "Vincentab@hotmail.fr", "phone": "0630845342"}, {"name": "Wilfried Majerus", "email": "Wmajerus64@gmail.com", "phone": "0631848739"}, {"name": "Yannick Hervouet", "email": "Yanhervouet@yahoo.fr", "phone": "0632694735"}, {"name": "Yvan Carli", "email": "Carliyvan@gmail.com", "phone": "0786141500"}, {"name": "Yves Robert", "email": "Robertyves64@yahoo.com", "phone": "0625780686"}];
+    const IMPORTED_CSV_CONTACTS = [{"name": "Alexandre Hirth", "email": "Alexandre.hirth@gmail.com", "phone": "0689863849"}, {"name": "Alexandre Le Riche", "email": "Alex.leriche649990@gmail.com", "phone": "0632240399"}, {"name": "Alexia Nascimento", "email": "Alexia64nasci@gmail.com", "phone": "0650952297"}, {"name": "Aline Mogaburu", "email": "Aline.mogaburu@hotmail.fr", "phone": "0680570156"}, {"name": "Amandine Frigot-Duviella", "email": "Am.duv@live.fr", "phone": "0630385339"}, {"name": "Amélie Blanc", "email": "Blancamelie64@gmail.com", "phone": "0683113640"}, {"name": "Angelique Mazzer", "email": "Mazzer64340@gmail.com", "phone": "0637377079"}, {"name": "Armelle Roncin", "email": "Armelle.roncin@live.fr", "phone": "0603391622"}, {"name": "Beñat Abeberry", "email": "Bernardabeberry@gmail.com", "phone": "0688352487"}, {"name": "Benoît Fournet", "email": "Benfournet@hotmail.fr", "phone": "0610015687"}, {"name": "Bertrand Pecastaing", "email": "B.pecastaing@hotmail.fr", "phone": "0665533209"}, {"name": "Brad Butryn", "email": "Butryn.brad@hotmail.com", "phone": "0766425844"}, {"name": "Camille Lamarque", "email": "Camillelamarque2595@gmail.com", "phone": "0677093984"}, {"name": "Carine Cohere", "email": "Carine.cohere@gmail.com", "phone": "0616890531"}, {"name": "Carole Longueira", "email": "Carole.longueira64@orange.fr", "phone": "0627257573"}, {"name": "Cecile Labat", "email": "Xexili1@hotmail.com", "phone": "0687708373"}, {"name": "Céline Noussitou", "email": "Celinenoussitou@gmail.com", "phone": "0688164980"}, {"name": "Chloé Leurgorry", "email": "Chloe.leurgorrypro@gmail.com", "phone": "0786830786"}, {"name": "Christelle Harismendy", "email": "Christelleharis@gmail.com", "phone": "0687956619"}, {"name": "Christine Fessard", "email": "Fessard_christine@yahoo.fr", "phone": "0688594657"}, {"name": "Christophe Ducournau", "email": "Cdn.au@pm.me", "phone": "0633173421"}, {"name": "Christophe Petit", "email": "Bdeco64@gmail.com", "phone": "0663697502"}, {"name": "Clara Gomez", "email": "Claragomez_40@hotmail.fr", "phone": "0764819766"}, {"name": "Clémentine Defente", "email": "Clementine.defente@gmail.com", "phone": "0619720683"}, {"name": "Cloe Perrochon", "email": "Cloe.perrochon@hotmail.fr", "phone": "0672270996"}, {"name": "Damien Delannoy", "email": "Damiendelannoy1@gmail.com", "phone": "0765757152"}, {"name": "David Hondarrague", "email": "Hondarraguedavid@gmail.com", "phone": "0661365930"}, {"name": "Delphine Sorondo", "email": "D.sorondo@icloud.com", "phone": "0689260368"}, {"name": "Elise Kéo Singharath", "email": "Ek4sing@hotmail.fr", "phone": "0664976671"}, {"name": "Elodie Chibrac", "email": "Elodie.hordiller@gmail.com", "phone": "0659315546"}, {"name": "Emilie Novion", "email": "Emilienovion@hotmail.com", "phone": "0674679548"}, {"name": "Fabienne Darrigol", "email": "Fabdarrigol@gmail.com", "phone": "0675962108"}, {"name": "Fabienne Guignard", "email": "Fabienneguignard@outlook.fr", "phone": "0674581289"}, {"name": "Fabrice Laplace", "email": "Jademarie72@hotmail.fr", "phone": "0659508260"}, {"name": "Florence Aguerre", "email": "Aguerreflo@hotmail.fr", "phone": "0630281974"}, {"name": "Florence Dufau", "email": "Floflobayonna@gmail.com", "phone": "0621912926"}, {"name": "Floriane Nascimento", "email": "Floriane.nascimento@hotmail.fr", "phone": "0664559226"}, {"name": "Frederic Hinx", "email": "Hfrederic40@gmail.com", "phone": "0767504323"}, {"name": "Gaelle Daum", "email": "Gaelle.daum@gmail.com", "phone": "0683545494"}, {"name": "Gaylord Janot", "email": "Gaylord.janot@sfr.fr", "phone": "0603058742"}, {"name": "Gérard Hamcha", "email": "Hamcha.gerard@orange.fr", "phone": "0630846242"}, {"name": "Grégory Gaillardet", "email": "Gaillard64@hotmail.com", "phone": "0689914632"}, {"name": "Isabelle Hervouët", "email": "Ipague@yahoo.fr", "phone": "0676744487"}, {"name": "Jean Louis Lespine", "email": "Jlespine64@gmail.com", "phone": "0662897238"}, {"name": "Jean-Marc Floureck", "email": "Floureck@hotmail.com", "phone": "0614645752"}, {"name": "Jerome Cresson", "email": "Etj@laposte.net", "phone": "0617390691"}, {"name": "Jérôme Mandin", "email": "Jm@syspro.fr", "phone": "06 30 10 42 28"}, {"name": "Jonathan Gonzalez", "email": "Jon1985@hotmail.fr", "phone": "0677767920"}, {"name": "Julie Bricard", "email": "Jubricard@hotmail.fr", "phone": "0626370559"}, {"name": "Julie Poublan", "email": "Julie.poublan@gmail.com", "phone": "0621502905"}, {"name": "Julien Paillard", "email": "Julienpaillard2507@gmail.com", "phone": "0767465345"}, {"name": "Katia Nascimento", "email": "Katia.nasci64@hotmail.com", "phone": "0650952505"}, {"name": "Laura Clochard", "email": "Clochard.laura79@gmail.com", "phone": "0677832382"}, {"name": "Laura Lafitte", "email": "Laura.lafitte40@gmail.com", "phone": "0646727485"}, {"name": "Laurent Berdou", "email": "Berdoulaurent@gmail.com", "phone": "0676480451"}, {"name": "Laurinda Gonçalves", "email": "Laurinda.goncalves917@dbmail.com", "phone": "0631632698"}, {"name": "Léa Lecouffe", "email": "Lecouffelea@orange.fr", "phone": "0648223217"}, {"name": "Louise Romero", "email": "Louise.romero@sfr.fr", "phone": "0615392085"}, {"name": "Lucie Heraud", "email": "Lucie.heraud@gmail.com", "phone": "0671233176"}, {"name": "Lucile Julienne", "email": "Julienne.lucile@orange.fr", "phone": "0683338724"}, {"name": "Maeva Grondard", "email": "Grondardmaeva@gmail.com", "phone": "0783319696"}, {"name": "Maialen Pessans", "email": "Mpessans@yahoo.fr", "phone": "0786555926"}, {"name": "Mailys Diribarne", "email": "Mailys.diribarne.sta@gmail.com", "phone": "0689375061"}, {"name": "Marc Duperthuis", "email": "Marc.duperthuis@gmail.com", "phone": "0612726173"}, {"name": "Marc Etcheverry", "email": "Macopec@hotmail.fr", "phone": "0673952300"}, {"name": "Marcel Leurgorry", "email": "Mgleurgorry@gmail.com", "phone": "0687011200"}, {"name": "Margaux Vicogne", "email": "Margauxvicogne4@gmail.com", "phone": "0646327868"}, {"name": "Marie Lorenzo", "email": "Marielorenzo64@yahoo.fr", "phone": "0688737257"}, {"name": "Marie Nougue", "email": "Marie_lauga@hotmail.com", "phone": "0676914438"}, {"name": "Marie Sanglar", "email": "Marie.picard64@gmail.com", "phone": "0618595049"}, {"name": "Marion Bernard", "email": "Marion-Bernard@hotmail.fr", "phone": "0681956363"}, {"name": "Marjorie Courtade", "email": "Courtademarjorie@yahoo.fr", "phone": "0786484185"}, {"name": "Matthieu Betachet", "email": "Matthieu.betachet@gmail.com", "phone": "0674314406"}, {"name": "Michele Fischer", "email": "Ma.fischer64@yahoo.com", "phone": "0661799511"}, {"name": "Mirentchu Biret", "email": "Toubalmirentchu@gmail.com", "phone": "0683328334"}, {"name": "Muriel Bordères", "email": "Mumu-64@hotmail.fr", "phone": "0689434636"}, {"name": "Nathalie Earnshaw", "email": "Natearnshaw@yahoo.fr", "phone": "0637697957"}, {"name": "Nelly Moreau", "email": "Nelmoreau@hotmail.com", "phone": "0676948319"}, {"name": "Nicolas De La Parra", "email": "Nicoccino@hotmail.fr", "phone": "0625763288"}, {"name": "Nicolas Gorostegui", "email": "Nicogoros64@gmail.com", "phone": "0614716644"}, {"name": "Ninon Brousse", "email": "Brousseninon@gmail.com", "phone": "0677416126"}, {"name": "Olivier Cassagne", "email": "Cassagneolivier@orange.fr", "phone": "0630252280"}, {"name": "Olivier Picard", "email": "Picardcorinne@bbox.fr", "phone": "0658876044"}, {"pagebreak
+"Philippe Larrode", "email": "Larrodephilippe@gmail.com", "phone": "0622592933"}, {"name": "Prune Tagot", "email": "Tagot.prune@gmail.com", "phone": "0627725807"}, {"name": "Sandrine Pouy", "email": "Sand.pouy@neuf.fr", "phone": "0663200064"}, {"name": "Stephane Contacolli", "email": "Stephanecontacolli@gmail.com", "phone": "0695151516"}, {"name": "Stéphane Da Silva", "email": "Sda-Silva@sfr.fr", "phone": "0630239320"}, {"name": "Stéphanie Hargous", "email": "Diethargous@gmail.com", "phone": "0621370567"}, {"name": "Stéphanie Leonard", "email": "Mscj.leonard@gmail.com", "phone": "0685152486"}, {"name": "Thierry Hayet", "email": "Titi.hyt@sfr.fr", "phone": "0676117562"}, {"name": "Thierry Saurais", "email": "Thierry.saurais@orange.fr", "phone": "0671071268"}, {"name": "Thomas Bergerot", "email": "Thomasbergerot@free.fr", "phone": "0608886466"}, {"name": "Thomas Lalande", "email": "Thomaslalande40@icloud.com", "phone": "0638673940"}, {"name": "Thomas Poilvé", "email": "Thomas.poilve@gmail.com", "phone": "0667288343"}, {"name": "Vincent Capdeville", "email": "Vinct64@msn.com", "phone": "0643268308"}, {"name": "Vincent Romatet", "email": "Vincentab@hotmail.fr", "phone": "0630845342"}, {"name": "Wilfried Majerus", "email": "Wmajerus64@gmail.com", "phone": "0631848739"}, {"name": "Yannick Hervouet", "email": "Yanhervouet@yahoo.fr", "phone": "0632694735"}, {"name": "Yvan Carli", "email": "Carliyvan@gmail.com", "phone": "0786141500"}, {"name": "Yves Robert", "email": "Robertyves64@yahoo.com", "phone": "0625780686"}];
 
     const defaultData = {
       config: { title: "Course des Hirondelles 2027", date: "26 juin 2027", location: "Saint-Pierre-d'Irube" },
@@ -290,7 +291,7 @@
       if (!Array.isArray(data.sections)) data.sections = Object.values(data.sections);
 
       data.sections.forEach(sec => {
-        if (!sec.layout) sec.layout = [];
+        if (!sec.layout) sec.layout = []; else if (!Array.isArray(sec.layout)) sec.layout = Object.values(sec.layout);
         sec.layout = sec.layout.filter(id => id !== 'mod_notes'); 
         if (!sec.moduleTitles) sec.moduleTitles = {};
 
@@ -298,23 +299,21 @@
           sec.tables = Object.values(sec.tables);
           sec.tables.forEach(t => {
             if (t.id && t.id.startsWith('tbl_tbl_')) t.id = t.id.replace('tbl_tbl_', 'tbl_');
-            if (!t.headers) t.headers = ["Col 1", "Col 2"];
-            if (!t.rows) t.rows = [];
+            if (!t.headers) t.headers = ["Col 1", "Col 2"]; else if (!Array.isArray(t.headers)) t.headers = Object.values(t.headers);
+            if (!t.rows) t.rows = []; else if (!Array.isArray(t.rows)) t.rows = Object.values(t.rows);
             t.rows = t.rows.map(r => {
-              if (!Array.isArray(r)) r = [];
+              if (!Array.isArray(r)) r = r ? Object.values(r) : [];
               while(r.length < t.headers.length) r.push("");
               return r.slice(0, t.headers.length);
             });
-            if (!t.colColors) t.colColors = Array(t.headers.length).fill("#f8fafc");
-            if (!Array.isArray(t.colColors)) t.colColors = Object.values(t.colColors);
-            if (!t.rowColors) t.rowColors = Array(t.rows.length).fill("#ffffff");
-            if (!Array.isArray(t.rowColors)) t.rowColors = Object.values(t.rowColors);
+            if (!t.colColors) t.colColors = Array(t.headers.length).fill("#f8fafc"); else if (!Array.isArray(t.colColors)) t.colColors = Object.values(t.colColors);
+            if (!t.rowColors) t.rowColors = Array(t.rows.length).fill("#ffffff"); else if (!Array.isArray(t.rowColors)) t.rowColors = Object.values(t.rowColors);
           });
         }
         if (!sec.tasks) sec.tasks = []; else { 
           sec.tasks = Object.values(sec.tasks); 
           sec.tasks.forEach(t => { 
-            if (!t.resps) { t.resps = t.resp ? [t.resp] : []; delete t.resp; }
+            if (!t.resps) { t.resps = t.resp ? [t.resp] : []; delete t.resp; } else if (!Array.isArray(t.resps)) t.resps = Object.values(t.resps);
             if (t.note === undefined) t.note = "";
           }); 
         }
@@ -327,11 +326,34 @@
         if (!sec.attachments) sec.attachments = []; else sec.attachments = Object.values(sec.attachments);
         if (!sec.gpxTracks) { sec.gpxTracks = []; } else { sec.gpxTracks = Object.values(sec.gpxTracks); sec.gpxTracks.forEach(tr => { if (!tr.mymapsUrl) tr.mymapsUrl = ""; }); }
         
-        /* RAJOUTS ESSENTIELS */
-        if (!sec.budgets) sec.budgets = []; else sec.budgets = Object.values(sec.budgets);
-        if (!sec.securityLogs) sec.securityLogs = []; else sec.securityLogs = Object.values(sec.securityLogs);
-        if (!sec.adminChecklists) sec.adminChecklists = []; else sec.adminChecklists = Object.values(sec.adminChecklists);
-        if (!sec.inventories) sec.inventories = []; else sec.inventories = Object.values(sec.inventories);
+        /* SANCTUARISATION DES NOUVEAUX MODULES */
+        if (!sec.budgets) sec.budgets = []; else {
+          sec.budgets = Object.values(sec.budgets);
+          sec.budgets.forEach(b => {
+            if (!b.items) b.items = []; else if (!Array.isArray(b.items)) b.items = Object.values(b.items);
+            b.items.forEach(it => {
+              if (it.amount === undefined || it.amount === null || isNaN(it.amount)) it.amount = 0;
+            });
+          });
+        }
+        if (!sec.securityLogs) sec.securityLogs = []; else {
+          sec.securityLogs = Object.values(sec.securityLogs);
+          sec.securityLogs.forEach(s => {
+            if (!s.emergencyContacts) s.emergencyContacts = []; else if (!Array.isArray(s.emergencyContacts)) s.emergencyContacts = Object.values(s.emergencyContacts);
+          });
+        }
+        if (!sec.adminChecklists) sec.adminChecklists = []; else {
+          sec.adminChecklists = Object.values(sec.adminChecklists);
+          sec.adminChecklists.forEach(c => {
+            if (!c.items) c.items = []; else if (!Array.isArray(c.items)) c.items = Object.values(c.items);
+          });
+        }
+        if (!sec.inventories) sec.inventories = []; else {
+          sec.inventories = Object.values(sec.inventories);
+          sec.inventories.forEach(i => {
+            if (!i.items) i.items = []; else if (!Array.isArray(i.items)) i.items = Object.values(i.items);
+          });
+        }
       });
 
       if (!data.contacts) data.contacts = [];
@@ -592,7 +614,7 @@
       const toSec = appData.sections.find(s => s.id === toSecId);
       if (!fromSec || !toSec) return;
 
-      fromSec.layout = fromSec.layout.filter(id => id !== moduleId);
+      fromSec.layout = (fromSec.layout || []).filter(id => id !== moduleId);
 
       if (moduleId.startsWith('tbl_')) {
         const tblIndex = (fromSec.tables || []).findIndex(t => t.id === moduleId);
@@ -675,6 +697,7 @@
         }
       }
 
+      if (!toSec.layout) toSec.layout = [];
       if (!toSec.layout.includes(moduleId)) {
         toSec.layout.push(moduleId);
       }
@@ -766,11 +789,10 @@
       if (sec.images && sec.images.some(img => checkMatch(img.name))) return true;
       if (sec.attachments && sec.attachments.some(att => checkMatch(att.name))) return true;
       if (sec.stickyNotes && sec.stickyNotes.some(n => checkMatch(n.title) || checkMatch(n.content))) return true;
-      /* RAJOUTS ESSENTIELS */
-      if (sec.budgets && sec.budgets.some(b => checkMatch(b.title) || b.items.some(i => checkMatch(i.label)))) return true;
-      if (sec.securityLogs && sec.securityLogs.some(s => checkMatch(s.title) || s.emergencyContacts.some(c => checkMatch(c.name) || checkMatch(c.role)))) return true;
-      if (sec.adminChecklists && sec.adminChecklists.some(c => checkMatch(c.title) || c.items.some(i => checkMatch(i.step)))) return true;
-      if (sec.inventories && sec.inventories.some(i => checkMatch(i.title) || i.items.some(it => checkMatch(it.item)))) return true;
+      if (sec.budgets && sec.budgets.some(b => checkMatch(b.title) || (b.items && Object.values(b.items).some(i => checkMatch(i.label))))) return true;
+      if (sec.securityLogs && sec.securityLogs.some(s => checkMatch(s.title) || (s.emergencyContacts && Object.values(s.emergencyContacts).some(c => checkMatch(c.name) || checkMatch(c.role))))) return true;
+      if (sec.adminChecklists && sec.adminChecklists.some(c => checkMatch(c.title) || (c.items && Object.values(c.items).some(i => checkMatch(i.step))))) return true;
+      if (sec.inventories && sec.inventories.some(i => checkMatch(i.title) || (i.items && Object.values(i.items).some(it => checkMatch(it.item))))) return true;
       return false;
     }
 
@@ -787,6 +809,7 @@
       if (!draggedModuleId || draggedModuleId === targetModuleId) return;
       const sec = appData.sections.find(s => s.id === activeSectionId);
       if (!sec) return;
+      if (!sec.layout) sec.layout = [];
       const oldIndex = sec.layout.indexOf(draggedModuleId);
       const newIndex = sec.layout.indexOf(targetModuleId);
       if (oldIndex > -1 && newIndex > -1) { sec.layout.splice(oldIndex, 1); sec.layout.splice(newIndex, 0, draggedModuleId); saveData(); renderActiveSection(); }
@@ -862,7 +885,7 @@
       const renderedModules = {};
       
       if (sec.type === 'trace_admin') {
-        const hasMapMatch = !globalSearchQuery || (sec.moduleTitles?.['mod_map'] || 'Cartes des Tracés (GPX)').toLowerCase().includes(globalSearchQuery) || sec.gpxTracks.some(trk => checkMatch(trk.name) || checkMatch(trk.mymapsUrl));
+        const hasMapMatch = !globalSearchQuery || (sec.moduleTitles?.['mod_map'] || 'Cartes des Tracés (GPX)').toLowerCase().includes(globalSearchQuery) || (sec.gpxTracks && sec.gpxTracks.some(trk => checkMatch(trk.name) || checkMatch(trk.mymapsUrl)));
         if (hasMapMatch) renderedModules['mod_map'] = generateMapModuleHtml(sec);
       }
       if (sec.type === 'contacts') {
@@ -871,65 +894,72 @@
       }
 
       (sec.budgets || []).forEach(b => {
-        if (!globalSearchQuery || checkMatch(b.title) || b.items.some(i => checkMatch(i.label))) renderedModules['bdg_' + b.id] = generateBudgetHtml(sec, b);
+        const items = Array.isArray(b.items) ? b.items : Object.values(b.items || {});
+        if (!globalSearchQuery || checkMatch(b.title) || items.some(i => checkMatch(i.label))) renderedModules['bdg_' + b.id] = generateBudgetHtml(sec, b);
       });
 
       (sec.securityLogs || []).forEach(s => {
-        if (!globalSearchQuery || checkMatch(s.title) || s.emergencyContacts.some(c => checkMatch(c.name) || checkMatch(c.role))) renderedModules['sec_' + s.id] = generateSecurityHtml(sec, s);
+        const contacts = Array.isArray(s.emergencyContacts) ? s.emergencyContacts : Object.values(s.emergencyContacts || {});
+        if (!globalSearchQuery || checkMatch(s.title) || contacts.some(c => checkMatch(c.name) || checkMatch(c.role))) renderedModules['sec_' + s.id] = generateSecurityHtml(sec, s);
       });
 
       (sec.adminChecklists || []).forEach(c => {
-        if (!globalSearchQuery || checkMatch(c.title) || c.items.some(i => checkMatch(i.step))) renderedModules['chk_' + c.id] = generateAdminChecklistHtml(sec, c);
+        const items = Array.isArray(c.items) ? c.items : Object.values(c.items || {});
+        if (!globalSearchQuery || checkMatch(c.title) || items.some(i => checkMatch(i.step))) renderedModules['chk_' + c.id] = generateAdminChecklistHtml(sec, c);
       });
 
       (sec.inventories || []).forEach(i => {
-        if (!globalSearchQuery || checkMatch(i.title) || i.items.some(it => checkMatch(it.item))) renderedModules['inv_' + i.id] = generateInventoryHtml(sec, i);
+        const items = Array.isArray(i.items) ? i.items : Object.values(i.items || {});
+        if (!globalSearchQuery || checkMatch(i.title) || items.some(it => checkMatch(it.item))) renderedModules['inv_' + i.id] = generateInventoryHtml(sec, i);
       });
 
-      sec.tables.forEach(t => {
-        const matchTable = !globalSearchQuery || checkMatch(t.title) || t.headers.some(h => checkMatch(h)) || t.rows.some(r => r.some(cell => checkMatch(cell)));
+      (sec.tables || []).forEach(t => {
+        const rows = Array.isArray(t.rows) ? t.rows : Object.values(t.rows || {});
+        const headers = Array.isArray(t.headers) ? t.headers : Object.values(t.headers || {});
+        const matchTable = !globalSearchQuery || checkMatch(t.title) || headers.some(h => checkMatch(h)) || rows.some(r => Array.isArray(r) && r.some(cell => checkMatch(cell)));
         if (matchTable) renderedModules[t.id] = generateTableHtml(sec, t);
       });
 
-      sec.sheets.forEach(s => {
+      (sec.sheets || []).forEach(s => {
         if (!globalSearchQuery || checkMatch(s.title)) renderedModules['sht_' + s.id] = generateSheetHtml(sec, s);
       });
 
-      sec.links.forEach(l => {
+      (sec.links || []).forEach(l => {
         if (!globalSearchQuery || checkMatch(l.title) || checkMatch(l.url)) renderedModules['lnk_' + l.id] = generateLinkHtml(sec, l);
       });
 
-      if (sec.timeline.length > 0) {
+      if (sec.timeline && sec.timeline.length > 0) {
         const agendaTitle = sec.moduleTitles?.['mod_agenda'] || 'Chronologie';
         const matchAgenda = !globalSearchQuery || agendaTitle.toLowerCase().includes(globalSearchQuery) || sec.timeline.some(item => checkMatch(item.activity) || checkMatch(item.time));
         if (matchAgenda) renderedModules['mod_agenda'] = generateAgendaHtml(sec);
       }
 
-      if (sec.tasks.length > 0) {
+      if (sec.tasks && sec.tasks.length > 0) {
         const tasksTitle = sec.moduleTitles?.['mod_tasks'] || 'Tâches';
         const matchTasks = !globalSearchQuery || tasksTitle.toLowerCase().includes(globalSearchQuery) || sec.tasks.some(task => checkMatch(task.name) || checkMatch(task.status) || checkMatch(task.note));
         if (matchTasks) renderedModules['mod_tasks'] = generateTasksHtml(sec);
       }
 
-      if (sec.localContacts.length > 0) {
+      if (sec.localContacts && sec.localContacts.length > 0) {
         const localCName = sec.moduleTitles?.['mod_local_contacts'] || 'Bénévoles Section';
         const matchLocal = !globalSearchQuery || localCName.toLowerCase().includes(globalSearchQuery) || sec.localContacts.some(c => checkMatch(c.name) || checkMatch(c.emplacement) || checkMatch(c.phone));
         if (matchLocal) renderedModules['mod_local_contacts'] = generateLocalContactsHtml(sec);
       }
 
-      if (sec.images.length > 0) {
+      if (sec.images && sec.images.length > 0) {
         const imgTitle = sec.moduleTitles?.['mod_images'] || 'Images';
         const matchImages = !globalSearchQuery || imgTitle.toLowerCase().includes(globalSearchQuery) || sec.images.some(img => checkMatch(img.name));
         if (matchImages) renderedModules['mod_images'] = generateImagesHtml(sec);
       }
 
-      if (sec.attachments.length > 0) {
+      if (sec.attachments && sec.attachments.length > 0) {
         const attTitle = sec.moduleTitles?.['mod_attachments'] || 'Pièces Jointes';
         const matchAtt = !globalSearchQuery || attTitle.toLowerCase().includes(globalSearchQuery) || sec.attachments.some(att => checkMatch(att.name));
         if (matchAtt) renderedModules['mod_attachments'] = generateAttachmentsHtml(sec);
       }
 
       const actualModuleIds = Object.keys(renderedModules);
+      if (!sec.layout) sec.layout = [];
       actualModuleIds.forEach(id => { if (!sec.layout.includes(id)) sec.layout.push(id); });
       sec.layout = sec.layout.filter(id => actualModuleIds.includes(id));
 
@@ -985,7 +1015,7 @@
       });
     }
 
-    /* --- FONCTIONS NOUVELLES : BUDGET, SÉCURITÉ, DÉMARCHES, INVENTAIRE & COM --- */
+    /* --- FONCTIONS : BUDGET, SÉCURITÉ, DÉMARCHES, INVENTAIRE & COM --- */
 
     function openBroadcastModal() {
       const modal = document.getElementById('broadcast-modal');
@@ -1064,9 +1094,10 @@
       let totalRecettes = 0;
       let totalDepenses = 0;
       let rowsHtml = '';
+      const items = Array.isArray(budget.items) ? budget.items : Object.values(budget.items || {});
 
-      budget.items.forEach((item, idx) => {
-        const amt = parseFloat(item.amount) || 0;
+      items.forEach((item, idx) => {
+        const amt = (item.amount !== undefined && item.amount !== null && !isNaN(item.amount)) ? parseFloat(item.amount) : 0;
         if (item.type === 'recette') totalRecettes += amt; else totalDepenses += amt;
 
         rowsHtml += `
@@ -1081,7 +1112,7 @@
               </select>
             </td>
             <td class="p-2">
-              <input type="number" step="0.01" value="${item.amount || 0}" onchange="updateBudgetItem('${sec.id}', '${budget.id}', ${idx}, 'amount', parseFloat(this.value))" class="w-24 bg-transparent font-bold outline-none focus:bg-white rounded px-1 text-right"> €
+              <input type="number" step="0.01" value="${amt}" onchange="updateBudgetItem('${sec.id}', '${budget.id}', ${idx}, 'amount', this.value)" class="w-24 bg-transparent font-bold outline-none focus:bg-white rounded px-1 text-right"> €
             </td>
             <td class="p-2 text-right">
               <button onclick="deleteBudgetItem('${sec.id}', '${budget.id}', ${idx})" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
@@ -1128,11 +1159,22 @@
       `;
     }
 
-    function updateBudgetTitle(secId, bId, val) { const b = appData.sections.find(s => s.id === secId)?.budgets.find(x => x.id === bId); if (b) { b.title = val; saveData(); } }
-    function updateBudgetItem(secId, bId, idx, field, val) { const b = appData.sections.find(s => s.id === secId)?.budgets.find(x => x.id === bId); if (b && b.items[idx]) { b.items[idx][field] = val; saveData(); renderActiveSection(); } }
-    function addBudgetItem(secId, bId) { const b = appData.sections.find(s => s.id === secId)?.budgets.find(x => x.id === bId); if (b) { b.items.push({ id: 'bi_' + Date.now(), label: "Poste divers", type: "depense", amount: 0 }); saveData(); renderActiveSection(); } }
-    function deleteBudgetItem(secId, bId, idx) { const b = appData.sections.find(s => s.id === secId)?.budgets.find(x => x.id === bId); if (b) { b.items.splice(idx, 1); saveData(); renderActiveSection(); } }
-    function deleteBudgetModule(secId, bId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.budgets = sec.budgets.filter(b => b.id !== bId); sec.layout = sec.layout.filter(id => id !== 'bdg_' + bId); saveData(); renderActiveSection(); } }
+    function updateBudgetTitle(secId, bId, val) { const b = appData.sections.find(s => s.id === secId)?.budgets?.find(x => x.id === bId); if (b) { b.title = val; saveData(); } }
+    function updateBudgetItem(secId, bId, idx, field, val) { 
+      const b = appData.sections.find(s => s.id === secId)?.budgets?.find(x => x.id === bId); 
+      if (b && b.items && b.items[idx]) { 
+        if (field === 'amount') {
+          const parsed = parseFloat(val);
+          val = isNaN(parsed) ? 0 : parsed;
+        }
+        b.items[idx][field] = val; 
+        saveData(); 
+        renderActiveSection(); 
+      } 
+    }
+    function addBudgetItem(secId, bId) { const b = appData.sections.find(s => s.id === secId)?.budgets?.find(x => x.id === bId); if (b) { if(!b.items) b.items = []; b.items.push({ id: 'bi_' + Date.now(), label: "Poste divers", type: "depense", amount: 0 }); saveData(); renderActiveSection(); } }
+    function deleteBudgetItem(secId, bId, idx) { const b = appData.sections.find(s => s.id === secId)?.budgets?.find(x => x.id === bId); if (b && b.items) { b.items.splice(idx, 1); saveData(); renderActiveSection(); } }
+    function deleteBudgetModule(secId, bId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.budgets = (sec.budgets || []).filter(b => b.id !== bId); sec.layout = (sec.layout || []).filter(id => id !== 'bdg_' + bId); saveData(); renderActiveSection(); } }
 
     // MODULE SÉCURITÉ & PC COURSE
     function addSecurityModule(secId) {
@@ -1154,7 +1196,8 @@
 
     function generateSecurityHtml(sec, secLog) {
       let rowsHtml = '';
-      secLog.emergencyContacts.forEach((c, idx) => {
+      const contacts = Array.isArray(secLog.emergencyContacts) ? secLog.emergencyContacts : Object.values(secLog.emergencyContacts || {});
+      contacts.forEach((c, idx) => {
         rowsHtml += `
           <div class="flex items-center justify-between p-2 bg-rose-50/50 border border-rose-100 rounded-lg text-xs gap-2">
             <div class="flex-1">
@@ -1183,11 +1226,11 @@
       `;
     }
 
-    function updateSecurityTitle(secId, sId, val) { const s = appData.sections.find(x => x.id === secId)?.securityLogs.find(x => x.id === sId); if (s) { s.title = val; saveData(); } }
-    function updateSecurityContact(secId, sId, idx, field, val) { const s = appData.sections.find(x => x.id === secId)?.securityLogs.find(x => x.id === sId); if (s && s.emergencyContacts[idx]) { s.emergencyContacts[idx][field] = val; saveData(); } }
-    function addSecurityContact(secId, sId) { const s = appData.sections.find(x => x.id === secId)?.securityLogs.find(x => x.id === sId); if (s) { s.emergencyContacts.push({ name: "Nouveau Contact", role: "Rôle", phone: "" }); saveData(); renderActiveSection(); } }
-    function deleteSecurityContact(secId, sId, idx) { const s = appData.sections.find(x => x.id === secId)?.securityLogs.find(x => x.id === sId); if (s) { s.emergencyContacts.splice(idx, 1); saveData(); renderActiveSection(); } }
-    function deleteSecurityModule(secId, sId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.securityLogs = sec.securityLogs.filter(s => s.id !== sId); sec.layout = sec.layout.filter(id => id !== 'sec_' + sId); saveData(); renderActiveSection(); } }
+    function updateSecurityTitle(secId, sId, val) { const s = appData.sections.find(x => x.id === secId)?.securityLogs?.find(x => x.id === sId); if (s) { s.title = val; saveData(); } }
+    function updateSecurityContact(secId, sId, idx, field, val) { const s = appData.sections.find(x => x.id === secId)?.securityLogs?.find(x => x.id === sId); if (s && s.emergencyContacts && s.emergencyContacts[idx]) { s.emergencyContacts[idx][field] = val; saveData(); } }
+    function addSecurityContact(secId, sId) { const s = appData.sections.find(x => x.id === secId)?.securityLogs?.find(x => x.id === sId); if (s) { if (!s.emergencyContacts) s.emergencyContacts = []; s.emergencyContacts.push({ name: "Nouveau Contact", role: "Rôle", phone: "" }); saveData(); renderActiveSection(); } }
+    function deleteSecurityContact(secId, sId, idx) { const s = appData.sections.find(x => x.id === secId)?.securityLogs?.find(x => x.id === sId); if (s && s.emergencyContacts) { s.emergencyContacts.splice(idx, 1); saveData(); renderActiveSection(); } }
+    function deleteSecurityModule(secId, sId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.securityLogs = (sec.securityLogs || []).filter(s => s.id !== sId); sec.layout = (sec.layout || []).filter(id => id !== 'sec_' + sId); saveData(); renderActiveSection(); } }
 
     // MODULE DÉMARCHES ADMINISTRATIVES
     function addAdminChecklistModule(secId) {
@@ -1210,7 +1253,8 @@
 
     function generateAdminChecklistHtml(sec, chk) {
       let rowsHtml = '';
-      chk.items.forEach((item, idx) => {
+      const items = Array.isArray(chk.items) ? chk.items : Object.values(chk.items || {});
+      items.forEach((item, idx) => {
         const badgeColors = { 'Non commencé': 'bg-slate-100 text-slate-700', 'En cours': 'bg-amber-100 text-amber-800', 'Déposé': 'bg-sky-100 text-sky-800', 'Validé': 'bg-emerald-100 text-emerald-800' };
         rowsHtml += `
           <tr class="border-b border-slate-100 text-xs">
@@ -1255,11 +1299,11 @@
       `;
     }
 
-    function updateAdminTitle(secId, cId, val) { const c = appData.sections.find(s => s.id === secId)?.adminChecklists.find(x => x.id === cId); if (c) { c.title = val; saveData(); } }
-    function updateAdminItem(secId, cId, idx, field, val) { const c = appData.sections.find(s => s.id === secId)?.adminChecklists.find(x => x.id === cId); if (c && c.items[idx]) { c.items[idx][field] = val; saveData(); renderActiveSection(); } }
-    function addAdminItem(secId, cId) { const c = appData.sections.find(s => s.id === secId)?.adminChecklists.find(x => x.id === cId); if (c) { c.items.push({ step: "Nouvelle démarche", deadLine: "", status: "Non commencé" }); saveData(); renderActiveSection(); } }
-    function deleteAdminItem(secId, cId, idx) { const c = appData.sections.find(s => s.id === secId)?.adminChecklists.find(x => x.id === cId); if (c) { c.items.splice(idx, 1); saveData(); renderActiveSection(); } }
-    function deleteAdminChecklistModule(secId, cId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.adminChecklists = sec.adminChecklists.filter(c => c.id !== cId); sec.layout = sec.layout.filter(id => id !== 'chk_' + cId); saveData(); renderActiveSection(); } }
+    function updateAdminTitle(secId, cId, val) { const c = appData.sections.find(s => s.id === secId)?.adminChecklists?.find(x => x.id === cId); if (c) { c.title = val; saveData(); } }
+    function updateAdminItem(secId, cId, idx, field, val) { const c = appData.sections.find(s => s.id === secId)?.adminChecklists?.find(x => x.id === cId); if (c && c.items && c.items[idx]) { c.items[idx][field] = val; saveData(); renderActiveSection(); } }
+    function addAdminItem(secId, cId) { const c = appData.sections.find(s => s.id === secId)?.adminChecklists?.find(x => x.id === cId); if (c) { if (!c.items) c.items = []; c.items.push({ step: "Nouvelle démarche", deadLine: "", status: "Non commencé" }); saveData(); renderActiveSection(); } }
+    function deleteAdminItem(secId, cId, idx) { const c = appData.sections.find(s => s.id === secId)?.adminChecklists?.find(x => x.id === cId); if (c && c.items) { c.items.splice(idx, 1); saveData(); renderActiveSection(); } }
+    function deleteAdminChecklistModule(secId, cId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.adminChecklists = (sec.adminChecklists || []).filter(c => c.id !== cId); sec.layout = (sec.layout || []).filter(id => id !== 'chk_' + cId); saveData(); renderActiveSection(); } }
 
     // MODULE INVENTAIRE ET LOGISTIQUE MATÉRIEL
     function addInventoryModule(secId) {
@@ -1281,7 +1325,8 @@
 
     function generateInventoryHtml(sec, inv) {
       let rowsHtml = '';
-      inv.items.forEach((it, idx) => {
+      const items = Array.isArray(inv.items) ? inv.items : Object.values(inv.items || {});
+      items.forEach((it, idx) => {
         const needed = parseInt(it.qtyNeeded) || 0;
         const available = parseInt(it.qtyAvailable) || 0;
         const isOK = available >= needed;
@@ -1292,10 +1337,10 @@
               <input type="text" value="${it.item || ''}" onchange="updateInventoryItem('${sec.id}', '${inv.id}', ${idx}, 'item', this.value)" class="w-full bg-transparent font-medium outline-none focus:bg-white rounded px-1">
             </td>
             <td class="p-2">
-              <input type="number" value="${it.qtyNeeded || 0}" onchange="updateInventoryItem('${sec.id}', '${inv.id}', ${idx}, 'qtyNeeded', parseInt(this.value))" class="w-16 bg-white border rounded px-1 py-0.5 text-center outline-none">
+              <input type="number" value="${needed}" onchange="updateInventoryItem('${sec.id}', '${inv.id}', ${idx}, 'qtyNeeded', this.value)" class="w-16 bg-white border rounded px-1 py-0.5 text-center outline-none">
             </td>
             <td class="p-2">
-              <input type="number" value="${it.qtyAvailable || 0}" onchange="updateInventoryItem('${sec.id}', '${inv.id}', ${idx}, 'qtyAvailable', parseInt(this.value))" class="w-16 border rounded px-1 py-0.5 text-center outline-none ${isOK ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-rose-50 border-rose-300 text-rose-800 font-bold'}">
+              <input type="number" value="${available}" onchange="updateInventoryItem('${sec.id}', '${inv.id}', ${idx}, 'qtyAvailable', this.value)" class="w-16 border rounded px-1 py-0.5 text-center outline-none ${isOK ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-rose-50 border-rose-300 text-rose-800 font-bold'}">
             </td>
             <td class="p-2">
               <input type="text" value="${it.location || ''}" placeholder="Lieu de stockage..." onchange="updateInventoryItem('${sec.id}', '${inv.id}', ${idx}, 'location', this.value)" class="w-full bg-transparent outline-none focus:bg-white rounded px-1 text-slate-600">
@@ -1327,13 +1372,24 @@
       `;
     }
 
-    function updateInventoryTitle(secId, iId, val) { const i = appData.sections.find(s => s.id === secId)?.inventories.find(x => x.id === iId); if (i) { i.title = val; saveData(); } }
-    function updateInventoryItem(secId, iId, idx, field, val) { const i = appData.sections.find(s => s.id === secId)?.inventories.find(x => x.id === iId); if (i && i.items[idx]) { i.items[idx][field] = val; saveData(); renderActiveSection(); } }
-    function addInventoryItem(secId, iId) { const i = appData.sections.find(s => s.id === secId)?.inventories.find(x => x.id === iId); if (i) { i.items.push({ item: "Nouvel équipement", qtyNeeded: 1, qtyAvailable: 0, location: "" }); saveData(); renderActiveSection(); } }
-    function deleteInventoryItem(secId, iId, idx) { const i = appData.sections.find(s => s.id === secId)?.inventories.find(x => x.id === iId); if (i) { i.items.splice(idx, 1); saveData(); renderActiveSection(); } }
-    function deleteInventoryModule(secId, iId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.inventories = sec.inventories.filter(i => i.id !== iId); sec.layout = sec.layout.filter(id => id !== 'inv_' + iId); saveData(); renderActiveSection(); } }
+    function updateInventoryTitle(secId, iId, val) { const i = appData.sections.find(s => s.id === secId)?.inventories?.find(x => x.id === iId); if (i) { i.title = val; saveData(); } }
+    function updateInventoryItem(secId, iId, idx, field, val) { 
+      const i = appData.sections.find(s => s.id === secId)?.inventories?.find(x => x.id === iId); 
+      if (i && i.items && i.items[idx]) { 
+        if (field === 'qtyNeeded' || field === 'qtyAvailable') {
+          const parsed = parseInt(val);
+          val = isNaN(parsed) ? 0 : parsed;
+        }
+        i.items[idx][field] = val; 
+        saveData(); 
+        renderActiveSection(); 
+      } 
+    }
+    function addInventoryItem(secId, iId) { const i = appData.sections.find(s => s.id === secId)?.inventories?.find(x => x.id === iId); if (i) { if (!i.items) i.items = []; i.items.push({ item: "Nouvel équipement", qtyNeeded: 1, qtyAvailable: 0, location: "" }); saveData(); renderActiveSection(); } }
+    function deleteInventoryItem(secId, iId, idx) { const i = appData.sections.find(s => s.id === secId)?.inventories?.find(x => x.id === iId); if (i && i.items) { i.items.splice(idx, 1); saveData(); renderActiveSection(); } }
+    function deleteInventoryModule(secId, iId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.inventories = (sec.inventories || []).filter(i => i.id !== iId); sec.layout = (sec.layout || []).filter(id => id !== 'inv_' + iId); saveData(); renderActiveSection(); } }
 
-    /* --- SUITE ET FIN DES FONCTIONS EXISTANTES D'ORIGINE --- */
+    /* --- SUITE DES FONCTIONS EXISTANTES --- */
 
     function generateStickyNotesSidebarHtml(sec, notesToDisplay) {
       let listHtml = '';
@@ -1345,7 +1401,7 @@
             <textarea placeholder="Contenu..." onchange="updateStickyNote('${sec.id}', '${note.id}', 'content', this.value)" class="w-full text-amber-800 text-sm bg-transparent border-none resize-none focus:bg-white rounded min-h-[90px] outline-none p-1">${note.content || ''}</textarea>
           </div>`;
       });
-      const stickyTitle = sec.moduleTitles?.['mod_sticky_notes'] || `Pense-Bêtes (${sec.stickyNotes.length})`;
+      const stickyTitle = sec.moduleTitles?.['mod_sticky_notes'] || `Pense-Bêtes (${(sec.stickyNotes || []).length})`;
       const isMobile = currentDeviceMode === 'mobile';
       const containerH = isMobile ? 'max-h-[400px]' : 'h-[calc(100vh-140px)]';
 
@@ -1361,14 +1417,14 @@
         </div>
       `;
     }
-    function addStickyNote(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.stickyNotes.push({ id: 'sn_' + Date.now(), title: "Nouvelle Note", content: "" }); saveData(); renderActiveSection(); } }
-    function updateStickyNote(sId, nId, f, v) { const s = appData.sections.find(x => x.id === sId); const n = s?.stickyNotes.find(x => x.id === nId); if(n) { n[f] = v; saveData(); } }
-    function deleteStickyNote(sId, nId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.stickyNotes = s.stickyNotes.filter(x => x.id !== nId); saveData(); renderActiveSection(); } }
+    function addStickyNote(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { if(!sec.stickyNotes) sec.stickyNotes = []; sec.stickyNotes.push({ id: 'sn_' + Date.now(), title: "Nouvelle Note", content: "" }); saveData(); renderActiveSection(); } }
+    function updateStickyNote(sId, nId, f, v) { const s = appData.sections.find(x => x.id === sId); const n = s?.stickyNotes?.find(x => x.id === nId); if(n) { n[f] = v; saveData(); } }
+    function deleteStickyNote(sId, nId) { const s = appData.sections.find(x => x.id === sId); if(s && s.stickyNotes) { s.stickyNotes = s.stickyNotes.filter(x => x.id !== nId); saveData(); renderActiveSection(); } }
 
     function openMyMapsModal(secId, trackId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
-      const trk = sec.gpxTracks.find(t => t.id === trackId);
+      const trk = (sec.gpxTracks || []).find(t => t.id === trackId);
       if (!trk) return;
       currentActiveTrackForModal = trk;
 
@@ -1433,7 +1489,7 @@
     function updateTrackMyMapsUrl(secId, trackId, urlVal) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
-      const trk = sec.gpxTracks.find(t => t.id === trackId);
+      const trk = (sec.gpxTracks || []).find(t => t.id === trackId);
       if (trk) {
         trk.mymapsUrl = urlVal.trim();
         saveData();
@@ -1442,8 +1498,9 @@
 
     function generateMapModuleHtml(sec) {
       let mapsHtml = '';
-      if (sec.gpxTracks.length === 0) { mapsHtml = `<div class="text-xs text-slate-400 italic mb-4">Aucun fichier GPX chargé.</div>`; } else {
-        sec.gpxTracks.forEach(trk => {
+      const tracks = sec.gpxTracks || [];
+      if (tracks.length === 0) { mapsHtml = `<div class="text-xs text-slate-400 italic mb-4">Aucun fichier GPX chargé.</div>`; } else {
+        tracks.forEach(trk => {
           mapsHtml += `
             <div class="mb-4 sm:mb-6 border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white relative z-0">
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50 p-2 sm:p-2.5 border-b border-slate-200 gap-2">
@@ -1469,15 +1526,15 @@
         ${mapsHtml}
       `;
     }
-    function handleGPXUpload(event, secId) { const files = event.target.files; if (!files || files.length === 0) return; const sec = appData.sections.find(s => s.id === secId); if (!sec) return; Array.from(files).forEach(file => { const reader = new FileReader(); reader.onload = function(e) { sec.gpxTracks.push({ id: 'gpx_' + Date.now() + Math.random(), name: file.name, data: e.target.result, mymapsUrl: "" }); saveData(); renderActiveSection(); }; reader.readAsText(file); }); event.target.value = ''; }
-    function deleteGPXTrack(secId, trackId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.gpxTracks = sec.gpxTracks.filter(t => t.id !== trackId); saveData(); renderActiveSection(); } }
-    function initMap(sec) { Object.values(leafletMaps).forEach(m => m.remove()); leafletMaps = {}; sec.gpxTracks.forEach((trk) => { const mapContainerId = 'map-' + trk.id; const container = document.getElementById(mapContainerId); if (!container) return; const map = L.map(mapContainerId).setView([43.4633, -1.4519], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map); const parser = new DOMParser(); const xmlDoc = parser.parseFromString(trk.data, "text/xml"); const points = []; xmlDoc.querySelectorAll("trkpt, wpt, rtept").forEach(pt => { const lat = parseFloat(pt.getAttribute("lat")); const lon = parseFloat(pt.getAttribute("lon")); if (!isNaN(lat) && !isNaN(lon)) points.push([lat, lon]); }); if (points.length > 0) { const polyline = L.polyline(points, { color: '#16a34a', weight: 4 }).addTo(map); map.fitBounds(polyline.getBounds(), { padding: [20, 20] }); } leafletMaps[trk.id] = map; }); }
+    function handleGPXUpload(event, secId) { const files = event.target.files; if (!files || files.length === 0) return; const sec = appData.sections.find(s => s.id === secId); if (!sec) return; if (!sec.gpxTracks) sec.gpxTracks = []; Array.from(files).forEach(file => { const reader = new FileReader(); reader.onload = function(e) { sec.gpxTracks.push({ id: 'gpx_' + Date.now() + Math.random(), name: file.name, data: e.target.result, mymapsUrl: "" }); saveData(); renderActiveSection(); }; reader.readAsText(file); }); event.target.value = ''; }
+    function deleteGPXTrack(secId, trackId) { const sec = appData.sections.find(s => s.id === secId); if (sec && sec.gpxTracks) { sec.gpxTracks = sec.gpxTracks.filter(t => t.id !== trackId); saveData(); renderActiveSection(); } }
+    function initMap(sec) { Object.values(leafletMaps).forEach(m => m.remove()); leafletMaps = {}; (sec.gpxTracks || []).forEach((trk) => { const mapContainerId = 'map-' + trk.id; const container = document.getElementById(mapContainerId); if (!container) return; const map = L.map(mapContainerId).setView([43.4633, -1.4519], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map); const parser = new DOMParser(); const xmlDoc = parser.parseFromString(trk.data, "text/xml"); const points = []; xmlDoc.querySelectorAll("trkpt, wpt, rtept").forEach(pt => { const lat = parseFloat(pt.getAttribute("lat")); const lon = parseFloat(pt.getAttribute("lon")); if (!isNaN(lat) && !isNaN(lon)) points.push([lat, lon]); }); if (points.length > 0) { const polyline = L.polyline(points, { color: '#16a34a', weight: 4 }).addTo(map); map.fitBounds(polyline.getBounds(), { padding: [20, 20] }); } leafletMaps[trk.id] = map; }); }
 
     function generateTableHtml(sec, table) {
-      if (!table.headers) table.headers = ["Col 1", "Col 2"];
-      if (!table.rows) table.rows = [];
-      if (!table.colColors) table.colColors = Array(table.headers.length).fill("#f8fafc");
-      if (!table.rowColors) table.rowColors = Array(table.rows.length).fill("#ffffff");
+      if (!table.headers) table.headers = ["Col 1", "Col 2"]; else if (!Array.isArray(table.headers)) table.headers = Object.values(table.headers);
+      if (!table.rows) table.rows = []; else if (!Array.isArray(table.rows)) table.rows = Object.values(table.rows);
+      if (!table.colColors) table.colColors = Array(table.headers.length).fill("#f8fafc"); else if (!Array.isArray(table.colColors)) table.colColors = Object.values(table.colColors);
+      if (!table.rowColors) table.rowColors = Array(table.rows.length).fill("#ffffff"); else if (!Array.isArray(table.rowColors)) table.rowColors = Object.values(table.rowColors);
 
       let headersHtml = '';
       table.headers.forEach((h, colIndex) => {
@@ -1496,7 +1553,7 @@
 
       let rowsHtml = '';
       table.rows.forEach((row, rowIndex) => {
-        if (!Array.isArray(row)) row = [];
+        if (!Array.isArray(row)) row = row ? Object.values(row) : [];
         let cellsHtml = '';
         const rColor = table.rowColors[rowIndex] || '#ffffff';
         
@@ -1566,37 +1623,54 @@
       } 
     }
 
-    function updateTableTitle(sId, tId, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.title = v; saveData(); } }
-    function updateTableHeader(sId, tId, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.headers[c] = v; saveData(); } }
-    function updateTableCell(sId, tId, r, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t && t.rows[r]) { t.rows[r][c] = v; saveData(); } }
-    function updateTableColColor(sId, tId, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.colColors[c] = v; saveData(); renderActiveSection(); } }
-    function updateTableRowColor(sId, tId, r, v) { const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); if(t) { t.rowColors[r] = v; saveData(); renderActiveSection(); } }
+    function updateTableTitle(sId, tId, v) { const t = appData.sections.find(x => x.id === sId)?.tables?.find(x => x.id === tId); if(t) { t.title = v; saveData(); } }
+    function updateTableHeader(sId, tId, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables?.find(x => x.id === tId); if(t && t.headers) { t.headers[c] = v; saveData(); } }
+    function updateTableCell(sId, tId, r, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables?.find(x => x.id === tId); if(t && t.rows && t.rows[r]) { t.rows[r][c] = v; saveData(); } }
+    function updateTableColColor(sId, tId, c, v) { const t = appData.sections.find(x => x.id === sId)?.tables?.find(x => x.id === tId); if(t && t.colColors) { t.colColors[c] = v; saveData(); renderActiveSection(); } }
+    function updateTableRowColor(sId, tId, r, v) { const t = appData.sections.find(x => x.id === sId)?.tables?.find(x => x.id === tId); if(t && t.rowColors) { t.rowColors[r] = v; saveData(); renderActiveSection(); } }
 
     function addTableRow(sId, tId) { 
-      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
-      if(t) { t.rows.push(new Array(t.headers.length).fill("")); t.rowColors.push("#ffffff"); saveData(); renderActiveSection(); } 
+      const t = appData.sections.find(x => x.id === sId)?.tables?.find(x => x.id === tId); 
+      if(t) { 
+        if (!t.headers) t.headers = ["Col 1", "Col 2"];
+        if (!t.rows) t.rows = [];
+        if (!t.rowColors) t.rowColors = [];
+        t.rows.push(new Array(t.headers.length).fill("")); 
+        t.rowColors.push("#ffffff"); 
+        saveData(); 
+        renderActiveSection(); 
+      } 
     }
     function addTableColumn(sId, tId) { 
-      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
-      if(t) { t.headers.push("Nouvelle"); t.rows.forEach(r => r.push("")); t.colColors.push("#f8fafc"); saveData(); renderActiveSection(); } 
+      const t = appData.sections.find(x => x.id === sId)?.tables?.find(x => x.id === tId); 
+      if(t) { 
+        if (!t.headers) t.headers = [];
+        if (!t.rows) t.rows = [];
+        if (!t.colColors) t.colColors = [];
+        t.headers.push("Nouvelle"); 
+        t.rows.forEach(r => { if(Array.isArray(r)) r.push(""); }); 
+        t.colColors.push("#f8fafc"); 
+        saveData(); 
+        renderActiveSection(); 
+      } 
     }
     function deleteTableColumn(sId, tId, colIndex) {
-      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId);
-      if (t) {
+      const t = appData.sections.find(x => x.id === sId)?.tables?.find(x => x.id === tId);
+      if (t && t.headers) {
         if (t.headers.length <= 1) { alert("Impossible de supprimer la dernière colonne."); return; }
         t.headers.splice(colIndex, 1);
-        t.colColors.splice(colIndex, 1);
-        t.rows.forEach(r => r.splice(colIndex, 1));
+        if (t.colColors) t.colColors.splice(colIndex, 1);
+        if (t.rows) t.rows.forEach(r => { if(Array.isArray(r)) r.splice(colIndex, 1); });
         saveData(); renderActiveSection();
       }
     }
     function deleteTableRow(sId, tId, r) { 
-      const t = appData.sections.find(x => x.id === sId)?.tables.find(x => x.id === tId); 
-      if(t && t.rows) { t.rows.splice(r, 1); t.rowColors.splice(r, 1); saveData(); renderActiveSection(); } 
+      const t = appData.sections.find(x => x.id === sId)?.tables?.find(x => x.id === tId); 
+      if(t && t.rows) { t.rows.splice(r, 1); if(t.rowColors) t.rowColors.splice(r, 1); saveData(); renderActiveSection(); } 
     }
     function deleteTable(sId, tId) { 
       const s = appData.sections.find(x => x.id === sId); 
-      if(s) { s.tables = s.tables.filter(x => x.id !== tId); s.layout = s.layout.filter(id => id !== tId); saveData(); renderActiveSection(); } 
+      if(s && s.tables) { s.tables = s.tables.filter(x => x.id !== tId); s.layout = (s.layout || []).filter(id => id !== tId); saveData(); renderActiveSection(); } 
     }
 
     function generateLinkHtml(sec, link) {
@@ -1639,12 +1713,12 @@
       }
     }
     function updateLinkField(sId, lId, f, v) {
-      const l = appData.sections.find(x => x.id === sId)?.links.find(x => x.id === lId);
+      const l = appData.sections.find(x => x.id === sId)?.links?.find(x => x.id === lId);
       if(l) { l[f] = v; saveData(); if(f==='url') renderActiveSection(); }
     }
     function deleteLink(sId, lId) {
       const s = appData.sections.find(x => x.id === sId);
-      if(s) { s.links = s.links.filter(x => x.id !== lId); saveData(); renderActiveSection(); }
+      if(s && s.links) { s.links = s.links.filter(x => x.id !== lId); saveData(); renderActiveSection(); }
     }
 
     function generateGlobalContactsHtml(sec) {
@@ -1672,7 +1746,7 @@
 
     function generateTasksHtml(sec) {
       let listHtml = '';
-      sec.tasks.forEach(task => {
+      (sec.tasks || []).forEach(task => {
         if (!task.resps) task.resps = [];
         if (task.note === undefined) task.note = "";
         const statusColors = { 'À faire': 'bg-slate-200 text-slate-700', 'En cours': 'bg-amber-100 text-amber-800', 'Validé': 'bg-emerald-100 text-emerald-800' };
@@ -1706,34 +1780,34 @@
             </div>
           </div>`;
       });
-      const tasksTitle = sec.moduleTitles?.['mod_tasks'] || `Tâches (${sec.tasks.length})`;
+      const tasksTitle = sec.moduleTitles?.['mod_tasks'] || `Tâches (${(sec.tasks || []).length})`;
       return `
         <div class="border-b pb-3 mb-3 pr-6"><h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_tasks', this.innerText)" class="font-bold text-slate-800 text-sm flex items-center gap-2 outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier le titre"><i class="fa-solid fa-list-check text-emerald-600"></i> <span>${tasksTitle}</span></h3></div>
         <div class="space-y-2.5">${listHtml}</div>
       `;
     }
-    function addNewTask(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.tasks.push({ id: 'k_' + Date.now(), name: "Nouvelle tâche", resps: [], date: "", status: "À faire", note: "" }); saveData(); renderActiveSection(); } }
-    function updateTaskField(sId, tId, f, v) { const s = appData.sections.find(x => x.id === sId); const t = s?.tasks.find(x => x.id === tId); if(t) { t[f] = v; saveData(); if(f==='status') renderActiveSection(); } }
-    function deleteTask(sId, tId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.tasks = s.tasks.filter(x => x.id !== tId); saveData(); renderActiveSection(); } }
-    function addTaskAssignee(sId, tId, contactId) { if (!contactId) return; const t = appData.sections.find(s => s.id === sId)?.tasks.find(x => x.id === tId); if (t) { if (!t.resps) t.resps = []; if (!t.resps.includes(contactId)) { t.resps.push(contactId); saveData(); renderActiveSection(); } } }
-    function removeTaskAssignee(sId, tId, index) { const t = appData.sections.find(s => s.id === sId)?.tasks.find(x => x.id === tId); if (t && t.resps) { t.resps.splice(index, 1); saveData(); renderActiveSection(); } }
+    function addNewTask(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { if(!sec.tasks) sec.tasks = []; sec.tasks.push({ id: 'k_' + Date.now(), name: "Nouvelle tâche", resps: [], date: "", status: "À faire", note: "" }); saveData(); renderActiveSection(); } }
+    function updateTaskField(sId, tId, f, v) { const s = appData.sections.find(x => x.id === sId); const t = s?.tasks?.find(x => x.id === tId); if(t) { t[f] = v; saveData(); if(f==='status') renderActiveSection(); } }
+    function deleteTask(sId, tId) { const s = appData.sections.find(x => x.id === sId); if(s && s.tasks) { s.tasks = s.tasks.filter(x => x.id !== tId); saveData(); renderActiveSection(); } }
+    function addTaskAssignee(sId, tId, contactId) { if (!contactId) return; const t = appData.sections.find(s => s.id === sId)?.tasks?.find(x => x.id === tId); if (t) { if (!t.resps) t.resps = []; if (!t.resps.includes(contactId)) { t.resps.push(contactId); saveData(); renderActiveSection(); } } }
+    function removeTaskAssignee(sId, tId, index) { const t = appData.sections.find(s => s.id === sId)?.tasks?.find(x => x.id === tId); if (t && t.resps) { t.resps.splice(index, 1); saveData(); renderActiveSection(); } }
 
     function generateAgendaHtml(sec) {
       let listHtml = '';
-      sec.timeline.forEach((item) => {
+      (sec.timeline || []).forEach((item) => {
         let selectOptions = `<option value="">-- Non assigné --</option>`;
         getAvailableContactsForTask(sec.id).forEach(c => { selectOptions += `<option value="${c.id}" ${c.id === item.resp ? 'selected' : ''}>${c.name}</option>`; });
         listHtml += `<div class="flex flex-wrap items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"><input type="time" value="${item.time || ''}" onchange="updateAgendaItem('${sec.id}', '${item.id}', 'time', this.value)" class="w-24 font-bold text-emerald-700 bg-white border rounded p-1 text-center"><input type="text" placeholder="Activité" value="${item.activity || ''}" onchange="updateAgendaItem('${sec.id}', '${item.id}', 'activity', this.value)" class="flex-1 min-w-[100px] font-medium bg-white border rounded p-1"><select onchange="updateAgendaItem('${sec.id}', '${item.id}', 'resp', this.value)" class="bg-white border rounded p-1 text-slate-700 max-w-[130px]">${selectOptions}</select><button onclick="deleteAgendaItem('${sec.id}', '${item.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button></div>`;
       });
-      const agendaTitle = sec.moduleTitles?.['mod_agenda'] || `Chronologie (${sec.timeline.length})`;
+      const agendaTitle = sec.moduleTitles?.['mod_agenda'] || `Chronologie (${(sec.timeline || []).length})`;
       return `
         <div class="border-b pb-3 mb-3 pr-6"><h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_agenda', this.innerText)" class="font-bold text-slate-800 text-sm flex items-center gap-2 outline-none hover:bg-slate-50 rounded px-1" title="Cliquer pour modifier le titre"><i class="fa-solid fa-clock text-rose-500"></i> <span>${agendaTitle}</span></h3></div>
         <div class="space-y-2">${listHtml}</div>
       `;
     }
-    function addAgendaSlot(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { sec.timeline.push({ id: 't_' + Date.now(), time: "08:00", activity: "Nouvel événement", resp: "" }); saveData(); renderActiveSection(); } }
-    function updateAgendaItem(sId, iId, f, v) { const i = appData.sections.find(x => x.id === sId)?.timeline.find(x => x.id === iId); if(i) { i[f] = v; saveData(); } }
-    function deleteAgendaItem(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.timeline = s.timeline.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
+    function addAgendaSlot(secId) { const sec = appData.sections.find(s => s.id === secId); if(sec) { if(!sec.timeline) sec.timeline = []; sec.timeline.push({ id: 't_' + Date.now(), time: "08:00", activity: "Nouvel événement", resp: "" }); saveData(); renderActiveSection(); } }
+    function updateAgendaItem(sId, iId, f, v) { const i = appData.sections.find(x => x.id === sId)?.timeline?.find(x => x.id === iId); if(i) { i[f] = v; saveData(); } }
+    function deleteAgendaItem(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s && s.timeline) { s.timeline = s.timeline.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
 
     function generateSheetHtml(sec, sheet) { 
       const iframeUrl = sheet.url.includes('?') ? sheet.url + '&rm=minimal' : sheet.url + '?rm=minimal'; 
@@ -1742,11 +1816,11 @@
         <div class="w-full h-[300px] sm:h-[400px] border rounded-xl overflow-hidden relative"><iframe src="${iframeUrl}" class="w-full h-full absolute inset-0"></iframe></div>
       `; 
     }
-    function updateSheetTitle(sId, shId, v) { const s = appData.sections.find(x => x.id === sId)?.sheets.find(x => x.id === shId); if(s) { s.title = v; saveData(); } }
-    function deleteSheet(sId, shId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.sheets = s.sheets.filter(x => x.id !== shId); s.layout = s.layout.filter(id => id !== 'sht_' + shId); saveData(); renderActiveSection(); } }
+    function updateSheetTitle(sId, shId, v) { const s = appData.sections.find(x => x.id === sId)?.sheets?.find(x => x.id === shId); if(s) { s.title = v; saveData(); } }
+    function deleteSheet(sId, shId) { const s = appData.sections.find(x => x.id === sId); if(s && s.sheets) { s.sheets = s.sheets.filter(x => x.id !== shId); s.layout = (s.layout || []).filter(id => id !== 'sht_' + shId); saveData(); renderActiveSection(); } }
 
     function generateLocalContactsHtml(sec) {
-      let rows = ''; sec.localContacts.forEach(c => { rows += `<tr class="border-b border-slate-100 last:border-none"><td class="p-2"><input type="text" value="${c.name || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'name', this.value)" class="bg-transparent w-full font-bold focus:bg-white rounded px-1 text-xs"></td><td class="p-2"><input type="text" value="${c.emplacement || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'emplacement', this.value)" class="bg-transparent w-full focus:bg-white rounded px-1 text-xs"></td><td class="p-2"><input type="text" value="${c.phone || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'phone', this.value)" class="bg-transparent w-full focus:bg-white rounded px-1 text-xs"></td><td class="p-2 text-right"><button onclick="deleteLocalContact('${sec.id}', '${c.id}')" class="text-slate-400 hover:text-rose-600 px-1"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; });
+      let rows = ''; (sec.localContacts || []).forEach(c => { rows += `<tr class="border-b border-slate-100 last:border-none"><td class="p-2"><input type="text" value="${c.name || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'name', this.value)" class="bg-transparent w-full font-bold focus:bg-white rounded px-1 text-xs"></td><td class="p-2"><input type="text" value="${c.emplacement || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'emplacement', this.value)" class="bg-transparent w-full focus:bg-white rounded px-1 text-xs"></td><td class="p-2"><input type="text" value="${c.phone || ''}" onchange="updateLocalContactField('${sec.id}', '${c.id}', 'phone', this.value)" class="bg-transparent w-full focus:bg-white rounded px-1 text-xs"></td><td class="p-2 text-right"><button onclick="deleteLocalContact('${sec.id}', '${c.id}')" class="text-slate-400 hover:text-rose-600 px-1"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; });
       let addOptions = `<option value="">+ Depuis la liste...</option><optgroup label="CSV">`;
       [...IMPORTED_CSV_CONTACTS].sort((a,b)=>a.name.localeCompare(b.name)).forEach((c, idx) => { addOptions += `<option value="csv_${idx}">${c.name}</option>`; }); addOptions += `</optgroup>`;
       if(appData.contacts.length>0) { addOptions += `<optgroup label="Evénement">`; appData.contacts.forEach(c => { addOptions += `<option value="evt_${c.id}">${c.name}</option>`; }); addOptions += `</optgroup>`; }
