@@ -1255,18 +1255,14 @@
     }
 
     // MODULE BUDGET
-    function addBudgetModule(secId) {
+  function addBudgetModule(secId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (sec) {
         if (!sec.budgets) sec.budgets = [];
         sec.budgets.push({
           id: 'bdg_' + Date.now(),
           title: "Budget & Suivi Financier",
-          items: [
-            { id: 'bi_1', label: "Inscriptions Coureurs", type: "recette", amount: 3500 },
-            { id: 'bi_2', label: "Prestation Chronométrage", type: "depense", amount: 1200 },
-            { id: 'bi_3', label: "Secours / Croix-Rouge", type: "depense", amount: 450 }
-          ]
+          items: []
         });
         saveData(); renderActiveSection();
       }
