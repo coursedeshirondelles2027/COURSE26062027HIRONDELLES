@@ -2,7 +2,7 @@
 <html lang="fr" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Organisateur Événement Trail & Course à Pied</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -77,8 +77,8 @@
   </div>
 
   <!-- ECRAN DE CONNEXION / LOGIN MODAL -->
-  <div id="login-modal" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 border border-slate-200">
+  <div id="login-modal" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 border border-slate-200 relative">
       <div class="text-center space-y-2">
         <div class="inline-flex bg-emerald-600 text-white p-3 rounded-2xl shadow-md mb-2">
           <i class="fa-solid fa-lock text-2xl"></i>
@@ -89,12 +89,12 @@
 
       <form onsubmit="handleAuthLogin(event)" class="space-y-4">
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Identifiant / Login</label>
-          <input type="text" id="auth-username" required placeholder="Entrez votre identifiant" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:bg-white focus:border-emerald-500 transition">
+          <label for="auth-username" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Identifiant / Login</label>
+          <input type="text" id="auth-username" name="username" required placeholder="Entrez votre identifiant" autocomplete="username" inputmode="text" autofocus class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:bg-white focus:border-emerald-500 transition select-text">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mot de passe</label>
-          <input type="password" id="auth-password" required placeholder="Entrez votre mot de passe" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:bg-white focus:border-emerald-500 transition">
+          <label for="auth-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mot de passe</label>
+          <input type="password" id="auth-password" name="password" required placeholder="Entrez votre mot de passe" autocomplete="current-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:bg-white focus:border-emerald-500 transition select-text">
         </div>
         <div id="auth-error-msg" class="text-xs font-semibold text-rose-600 hidden text-center bg-rose-50 p-2 rounded-lg border border-rose-200">
           Identifiant ou mot de passe incorrect.
@@ -1321,11 +1321,27 @@
     function deleteImage(sId, iId) { const s = appData.sections.find(x => x.id === sId); if(s && s.images) { s.images = s.images.filter(x => x.id !== iId); saveData(); renderActiveSection(); } }
 
     function generateAttachmentsHtml(sec) { 
-      let l = ''; (sec.attachments || []).forEach(att => l += `<div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-xs"><span>${att.name}</span> <button onclick="deleteAttachment('${sec.id}', '${att.id}')" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></div>`); 
+      let l = ''; 
+      (sec.attachments || []).forEach(att => {
+        l += `
+          <div class="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs gap-2">
+            <a href="${att.dataUrl}" download="${att.name}" target="_blank" class="flex items-center gap-2 font-medium text-purple-700 hover:text-purple-900 hover:underline truncate flex-1" title="Télécharger / Ouvrir ${att.name}">
+              <i class="fa-solid fa-file-arrow-down shrink-0"></i>
+              <span class="truncate">${att.name}</span>
+            </a>
+            <button onclick="deleteAttachment('${sec.id}', '${att.id}')" class="text-slate-400 hover:text-rose-500 p-1 shrink-0" title="Supprimer">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>`;
+      }); 
       const attTitle = sec.moduleTitles?.['mod_attachments'] || 'Pièces Jointes';
       return `
-        <div class="border-b pb-2 mb-3 pr-6"><h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_attachments', this.innerText)" class="font-bold text-sm text-purple-500 outline-none hover:bg-slate-50 rounded px-1 flex items-center gap-2" title="Cliquer pour modifier le titre"><i class="fa-solid fa-paperclip"></i> <span>${attTitle}</span></h3></div>
-        <div class="grid gap-2">${l}</div>
+        <div class="border-b pb-2 mb-3 pr-6">
+          <h3 contenteditable="true" onblur="updateModuleTitle('${sec.id}', 'mod_attachments', this.innerText)" class="font-bold text-sm text-purple-500 outline-none hover:bg-slate-50 rounded px-1 flex items-center gap-2" title="Cliquer pour modifier le titre">
+            <i class="fa-solid fa-paperclip"></i> <span>${attTitle}</span>
+          </h3>
+        </div>
+        <div class="grid gap-2">${l || '<div class="text-xs text-slate-400 italic">Aucune pièce jointe.</div>'}</div>
       `; 
     }
     function uploadAttachment(e, sId) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => { const s = appData.sections.find(x => x.id === sId); if(s) { if(!s.attachments) s.attachments = []; s.attachments.push({id: 'att_'+Date.now(), name: f.name, dataUrl: ev.target.result}); saveData(); renderActiveSection(); }}; r.readAsDataURL(f); e.target.value = ''; }
