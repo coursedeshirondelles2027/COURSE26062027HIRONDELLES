@@ -48,30 +48,84 @@
 </head>
 <body class="h-full font-sans text-slate-800 bg-slate-100 flex flex-col antialiased" onkeydown="handleGlobalKeyDown(event)">
 
-  <!-- TOP HEADER BANNER -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm" id="top-header-container">
-    <!-- Rendu dynamique par renderHeader() -->
-  </header>
-
-  <!-- MAIN CONTAINER -->
-  <div class="flex-1 flex overflow-hidden">
-
-    <!-- SIDEBAR NAVIGATION -->
-    <aside class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-sm z-20">
-      <div class="p-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Modules & Sections</span>
-        <button onclick="addNewCustomSectionPrompt()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2 py-1 rounded flex items-center gap-1 shadow-sm">
-          <i class="fa-solid fa-plus text-[10px]"></i> Section
-        </button>
+  <!-- ECRAN DE CONNEXION / LOGIN MODAL -->
+  <div id="login-modal" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 border border-slate-200">
+      <div class="text-center space-y-2">
+        <div class="inline-flex bg-emerald-600 text-white p-3 rounded-2xl shadow-md mb-2">
+          <i class="fa-solid fa-lock text-2xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-slate-900">Accès Sécurisé</h2>
+        <p class="text-xs text-slate-500">Veuillez vous identifier pour accéder à la plateforme.</p>
       </div>
-      <nav id="sidebar-sections-list" class="flex-1 overflow-y-auto p-2 space-y-1"></nav>
-    </aside>
 
-    <!-- CONTENT VIEWPORT -->
-    <main class="flex-1 overflow-y-auto bg-slate-100 p-4 md:p-6" id="main-content-viewport"></main>
+      <form onsubmit="handleAuthLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Identifiant / Login</label>
+          <input type="text" id="auth-username" required placeholder="Entrez votre identifiant" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:bg-white focus:border-emerald-500 transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mot de passe</label>
+          <input type="password" id="auth-password" required placeholder="Entrez votre mot de passe" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:bg-white focus:border-emerald-500 transition">
+        </div>
+        <div id="auth-error-msg" class="text-xs font-semibold text-rose-600 hidden text-center bg-rose-50 p-2 rounded-lg border border-rose-200">
+          Identifiant ou mot de passe incorrect.
+        </div>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm transition shadow-sm flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket"></i> Se connecter
+        </button>
+      </form>
+    </div>
   </div>
 
-  <!-- MODAL PLEIN ÉCRAN MY MAPS (SUPERPOSITION) -->
+  <!-- MODAL DE GESTION DES UTILISATEURS -->
+  <div id="users-modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-users-gear text-emerald-600"></i> Gestion des Accès & Utilisateurs</h2>
+        <button onclick="closeUsersModal()" class="text-slate-400 hover:text-rose-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-5 border-b border-slate-200 bg-slate-50/50">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <input type="text" id="new-user-login" placeholder="Identifiant (ex: paul)" class="bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-emerald-500">
+          <input type="text" id="new-user-pass" placeholder="Mot de passe" class="bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-emerald-500">
+          <button onclick="addUserAccount()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg px-3 py-2 transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-user-plus"></i> Ajouter Accès
+          </button>
+        </div>
+      </div>
+      <div id="users-list-area" class="p-5 flex-1 overflow-y-auto space-y-3 bg-slate-100">
+        <!-- Liste dynamique -->
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION PRINCIPALE -->
+  <div id="app-main-content" class="h-full flex flex-col hidden">
+    <!-- TOP HEADER BANNER -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm" id="top-header-container">
+      <!-- Rendu dynamique par renderHeader() -->
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- SIDEBAR NAVIGATION -->
+      <aside class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-sm z-20">
+        <div class="p-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Modules & Sections</span>
+          <button onclick="addNewCustomSectionPrompt()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2 py-1 rounded flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-plus text-[10px]"></i> Section
+          </button>
+        </div>
+        <nav id="sidebar-sections-list" class="flex-1 overflow-y-auto p-2 space-y-1"></nav>
+      </aside>
+
+      <!-- CONTENT VIEWPORT -->
+      <main class="flex-1 overflow-y-auto bg-slate-100 p-4 md:p-6" id="main-content-viewport"></main>
+    </div>
+  </div>
+
+  <!-- MODAL PLEIN ÉCRAN MY MAPS -->
   <div id="mymaps-fullscreen-modal" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex-col backdrop-blur-sm p-4 md:p-8">
     <div class="bg-white w-full h-full rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
       <div class="px-5 py-3 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
@@ -80,7 +134,7 @@
           <h3 id="mymaps-modal-title" class="font-bold text-slate-800 text-sm md:text-base">Google My Maps</h3>
         </div>
         <div class="flex items-center gap-3">
-          <button onclick="refreshMyMapsModal()" class="text-xs bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold px-3 py-1.5 rounded-lg border border-sky-200 flex items-center gap-1.5 transition" title="Forcer la mise à jour des modifications">
+          <button onclick="refreshMyMapsModal()" class="text-xs bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold px-3 py-1.5 rounded-lg border border-sky-200 flex items-center gap-1.5 transition">
             <i class="fa-solid fa-rotate"></i> Rafraîchir
           </button>
           <button onclick="downloadTrackGPX()" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5 transition">
@@ -113,7 +167,6 @@
     </div>
   </div>
 
-
   <script>
     const firebaseConfig = {
       databaseURL: "https://hiron27-default-rtdb.europe-west1.firebasedatabase.app"
@@ -127,6 +180,9 @@
 
     const defaultData = {
       config: { title: "Course des Hirondelles 2027", date: "26 juin 2027", location: "Saint-Pierre-d'Irube" },
+      users: [
+        { id: "usr_1", login: "christophe", pass: "KTBQH3UE64%" }
+      ],
       contacts: [],
       sections: [
         { id: "sec-0", title: "Planning Jour J (Agenda)", icon: "fa-calendar-check", type: "agenda", layout: [], timeline: [], stickyNotes: [], moduleTitles: {} },
@@ -147,14 +203,16 @@
         const data = snapshot.val();
         if (data) { appData = sanitizeData(data); } else { appData = defaultData; eventRef.set(appData); }
         if (!activeSectionId && appData.sections.length > 0) activeSectionId = appData.sections[0].id;
-        renderHeader();
-        renderSidebar(); 
-        renderActiveSection();
+        
+        checkSessionAuth();
       });
     }
 
     function sanitizeData(data) {
       if (!data.config) data.config = { title: "Course des Hirondelles 2027", date: "26 juin 2027", location: "Saint-Pierre-d'Irube" };
+      if (!data.users || !Array.isArray(data.users) || data.users.length === 0) {
+        data.users = [{ id: "usr_1", login: "christophe", pass: "KTBQH3UE64%" }];
+      }
       if (!data.sections) data.sections = [];
       if (!Array.isArray(data.sections)) data.sections = Object.values(data.sections);
 
@@ -204,6 +262,105 @@
       return data;
     }
 
+    // --- AUTHENTIFICATION ---
+    function checkSessionAuth() {
+      const authUser = sessionStorage.getItem('logged_user');
+      if (authUser) {
+        document.getElementById('login-modal').classList.add('hidden');
+        document.getElementById('app-main-content').classList.remove('hidden');
+        renderHeader();
+        renderSidebar(); 
+        renderActiveSection();
+      } else {
+        document.getElementById('login-modal').classList.remove('hidden');
+        document.getElementById('app-main-content').classList.add('hidden');
+      }
+    }
+
+    function handleAuthLogin(e) {
+      e.preventDefault();
+      const userVal = document.getElementById('auth-username').value.trim().toLowerCase();
+      const passVal = document.getElementById('auth-password').value.trim();
+      const errBox = document.getElementById('auth-error-msg');
+
+      const foundUser = appData.users.find(u => u.login.toLowerCase() === userVal && u.pass === passVal);
+
+      if (foundUser) {
+        errBox.classList.add('hidden');
+        sessionStorage.setItem('logged_user', foundUser.login);
+        checkSessionAuth();
+      } else {
+        errBox.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('logged_user');
+      checkSessionAuth();
+    }
+
+    function openUsersModal() {
+      renderUsersList();
+      document.getElementById('users-modal').classList.remove('hidden');
+      document.getElementById('users-modal').classList.add('flex');
+    }
+
+    function closeUsersModal() {
+      document.getElementById('users-modal').classList.add('hidden');
+      document.getElementById('users-modal').classList.remove('flex');
+    }
+
+    function renderUsersList() {
+      const listArea = document.getElementById('users-list-area');
+      listArea.innerHTML = '';
+
+      appData.users.forEach((u, idx) => {
+        const userCard = document.createElement('div');
+        userCard.className = "flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 text-xs shadow-sm";
+        userCard.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="bg-slate-100 text-slate-600 p-2 rounded-lg font-bold">
+              <i class="fa-solid fa-user-lock"></i>
+            </div>
+            <div>
+              <div class="font-bold text-slate-800">${u.login}</div>
+              <div class="text-slate-400 font-mono text-[11px]">Mot de passe : ${u.pass}</div>
+            </div>
+          </div>
+          ${appData.users.length > 1 ? `<button onclick="deleteUserAccount('${u.id}')" class="text-slate-400 hover:text-rose-600 p-2"><i class="fa-solid fa-trash-can"></i></button>` : `<span class="text-[10px] text-slate-400 italic">Compte principal</span>`}
+        `;
+        listArea.appendChild(userCard);
+      });
+    }
+
+    function addUserAccount() {
+      const loginInp = document.getElementById('new-user-login');
+      const passInp = document.getElementById('new-user-pass');
+      const login = loginInp.value.trim();
+      const pass = passInp.value.trim();
+
+      if (!login || !pass) { alert("Veuillez remplir l'identifiant et le mot de passe."); return; }
+
+      if (appData.users.some(u => u.login.toLowerCase() === login.toLowerCase())) {
+        alert("Cet identifiant existe déjà.");
+        return;
+      }
+
+      appData.users.push({ id: 'usr_' + Date.now(), login: login, pass: pass });
+      saveData();
+      loginInp.value = '';
+      passInp.value = '';
+      renderUsersList();
+    }
+
+    function deleteUserAccount(userId) {
+      if (confirm("Supprimer cet accès utilisateur ?")) {
+        appData.users = appData.users.filter(u => u.id !== userId);
+        saveData();
+        renderUsersList();
+      }
+    }
+
     function saveData(explicitNotification = false) {
       if (!appData) return;
       eventRef.set(appData).then(() => {
@@ -217,6 +374,8 @@
       const headerContainer = document.getElementById('top-header-container');
       if (!headerContainer || !appData || !appData.config) return;
       const cfg = appData.config;
+      const loggedUser = sessionStorage.getItem('logged_user') || 'Christophe';
+
       headerContainer.innerHTML = `
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div class="flex items-center space-x-3">
@@ -234,12 +393,16 @@
             </div>
           </div>
 
-          <!-- MOTEUR DE RECHERCHE GLOBAL -->
+          <!-- MOTEUR DE RECHERCHE GLOBAL & BOUTONS D'ACTION -->
           <div class="flex items-center flex-wrap gap-2">
             <div class="relative">
               <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
               <input type="text" id="global-search-input" oninput="handleGlobalSearch(this.value)" value="${globalSearchQuery}" placeholder="Rechercher sur tout le site..." class="bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs focus:bg-white focus:border-emerald-500 outline-none w-48 sm:w-64 transition shadow-inner">
             </div>
+
+            <button onclick="openUsersModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm" title="Gérer les accès et mots de passe">
+              <i class="fa-solid fa-user-gear text-emerald-600"></i> Accès
+            </button>
 
             <button onclick="openRecapModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
               <i class="fa-solid fa-clipboard-user"></i> Récap.
@@ -247,6 +410,10 @@
 
             <button onclick="saveData(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
               <i class="fa-solid fa-floppy-disk"></i> Enregistrer
+            </button>
+
+            <button onclick="handleLogout()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm" title="Déconnexion">
+              <i class="fa-solid fa-right-from-bracket"></i>
             </button>
 
             <span id="save-indicator" class="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md flex items-center gap-1 font-medium">
@@ -278,14 +445,12 @@
     function handleSectionDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
     function handleSectionDrop(e, targetSecId) {
       e.preventDefault();
-      // Si on dépose un module sur une section dans la sidebar
       if (draggedModuleId && draggedSectionId && draggedSectionId !== targetSecId) {
         transferModuleBetweenSections(draggedSectionId, targetSecId, draggedModuleId);
         draggedModuleId = null;
         draggedSectionId = null;
         return;
       }
-      // Sinon réorganisation des sections
       if (!draggedSectionId || draggedSectionId === targetSecId) return;
       const oldIdx = appData.sections.findIndex(s => s.id === draggedSectionId);
       const newIdx = appData.sections.findIndex(s => s.id === targetSecId);
@@ -297,16 +462,13 @@
       }
     }
 
-    // --- TRANSFERT DE MODULE D'UNE SECTION À UNE AUTRE ---
     function transferModuleBetweenSections(fromSecId, toSecId, moduleId) {
       const fromSec = appData.sections.find(s => s.id === fromSecId);
       const toSec = appData.sections.find(s => s.id === toSecId);
       if (!fromSec || !toSec) return;
 
-      // Retirer du layout de la section source
       fromSec.layout = fromSec.layout.filter(id => id !== moduleId);
 
-      // Si c'est un tableau ou un lien ou une feuille, le déplacer dans les tableaux/liens/feuilles de la section cible
       if (moduleId.startsWith('tbl_')) {
         const tblIndex = (fromSec.tables || []).findIndex(t => t.id === moduleId);
         if (tblIndex > -1) {
@@ -331,7 +493,6 @@
           toSec.links.push(lnk);
         }
       } else if (moduleId === 'mod_map') {
-        // Déplacer les pistes GPX
         if (fromSec.gpxTracks && fromSec.gpxTracks.length > 0) {
           if (!toSec.gpxTracks) toSec.gpxTracks = [];
           toSec.gpxTracks.push(...fromSec.gpxTracks);
@@ -357,7 +518,6 @@
         }
       }
 
-      // Ajouter au layout de la section cible
       if (!toSec.layout.includes(moduleId)) {
         toSec.layout.push(moduleId);
       }
@@ -398,7 +558,6 @@
       });
     }
 
-    // --- MOTEUR DE RECHERCHE GLOBAL TRANS-SECTIONS ---
     function handleGlobalSearch(query) {
       globalSearchQuery = query.trim().toLowerCase();
       if (globalSearchQuery.length > 0) {
@@ -456,7 +615,6 @@
     function handleModuleDragEnd(e) { if (e.target) e.target.classList.remove('module-dragging'); draggedModuleId = null; }
 
     function wrapModuleDraggable(moduleId, contentHtml, isSingle = false) {
-      // Les cartes (mod_map) prennent TOUJOURS toute la largeur (col-span-1 xl:col-span-2) et ne peuvent pas avoir de voisin à côté
       const isMap = moduleId === 'mod_map';
       const spanClass = (isSingle || isMap) ? "col-span-1 xl:col-span-2" : "col-span-1";
       return `
@@ -654,7 +812,6 @@
     function updateStickyNote(sId, nId, f, v) { const s = appData.sections.find(x => x.id === sId); const n = s?.stickyNotes.find(x => x.id === nId); if(n) { n[f] = v; saveData(); } }
     function deleteStickyNote(sId, nId) { const s = appData.sections.find(x => x.id === sId); if(s) { s.stickyNotes = s.stickyNotes.filter(x => x.id !== nId); saveData(); renderActiveSection(); } }
 
-    // --- MODULE LIAISON MY MAPS & PLEIN ÉCRAN ANTI-CACHE ---
     function openMyMapsModal(secId, trackId) {
       const sec = appData.sections.find(s => s.id === secId);
       if (!sec) return;
@@ -702,6 +859,7 @@
       if (e.key === "Escape") {
         closeMyMapsModal();
         closeRecapModal();
+        closeUsersModal();
       }
     }
 
@@ -761,7 +919,6 @@
     function deleteGPXTrack(secId, trackId) { const sec = appData.sections.find(s => s.id === secId); if (sec) { sec.gpxTracks = sec.gpxTracks.filter(t => t.id !== trackId); saveData(); renderActiveSection(); } }
     function initMap(sec) { Object.values(leafletMaps).forEach(m => m.remove()); leafletMaps = {}; sec.gpxTracks.forEach((trk) => { const mapContainerId = 'map-' + trk.id; const container = document.getElementById(mapContainerId); if (!container) return; const map = L.map(mapContainerId).setView([43.4633, -1.4519], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map); const parser = new DOMParser(); const xmlDoc = parser.parseFromString(trk.data, "text/xml"); const points = []; xmlDoc.querySelectorAll("trkpt, wpt, rtept").forEach(pt => { const lat = parseFloat(pt.getAttribute("lat")); const lon = parseFloat(pt.getAttribute("lon")); if (!isNaN(lat) && !isNaN(lon)) points.push([lat, lon]); }); if (points.length > 0) { const polyline = L.polyline(points, { color: '#16a34a', weight: 4 }).addTo(map); map.fitBounds(polyline.getBounds(), { padding: [20, 20] }); } leafletMaps[trk.id] = map; }); }
 
-    // --- TABLEAUX INTÉGRÉS ---
     function generateTableHtml(sec, table) {
       if (!table.headers) table.headers = ["Col 1", "Col 2"];
       if (!table.rows) table.rows = [];
@@ -888,7 +1045,6 @@
       if(s) { s.tables = s.tables.filter(x => x.id !== tId); s.layout = s.layout.filter(id => id !== tId); saveData(); renderActiveSection(); } 
     }
 
-    // --- MODULE LIEN AVEC PRÉVISUALISATION INTELLIGENTE ---
     function generateLinkHtml(sec, link) {
       let rawUrl = link.url || "";
       let embedUrl = rawUrl;
